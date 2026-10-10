@@ -28,6 +28,10 @@ the delivered text, visuals, narration, subtitles or links to private solution.m
    Resolve unreadable/missing data before claiming a solution.
 3. Solve and independently check. Save original input and solution.md in a unique
    output/<session>/. Code validates production structure, not mathematical truth.
+   Follow [verification rules](../../../docs/math-verification-rules.md).
+   Include complete private reasoning, conditions/cases and actual checks in
+   solution.md. Copy necessary original diagrams into the session and declare
+   problem.imagePaths; never substitute a reconstructed diagram for the source.
 4. Write script.json version 2.0 there. Use examples/math/ as runnable references.
    Prefer one reasoning step per scene, retaining domain restrictions and cases.
    Guided scripts omit problem.answer and all answer scenes/templates; require
@@ -42,10 +46,15 @@ the delivered text, visuals, narration, subtitles or links to private solution.m
 6. Use math templates, LaTeX and declarative diagrams. Keep equations readable.
    SFX default off. Split long passages without losing source text.
 7. Run npm run pipeline -- output/<session>/script.json --validate. Fix errors
-   before paid TTS, then run pipeline. Missing Vbee English configuration is a
+   then run the same command with --audit before paid TTS. AUDIT_AI_* selects
+   the independent verifier. Resolve failed/uncertain findings and audit again;
+   only a matching pass permits production. Missing verifier configuration or
+   evidence blocks TTS/render. Never manually mark a report pass.
+   Then run pipeline. Missing Vbee English configuration is a
    blocker; never silently substitute another provider.
 8. Inspect frames and MP4 metadata/audio. Report absolute links to video, audio,
-   transcript and solution with actual evidence and remaining gaps. Provider
+   transcript with actual evidence and remaining gaps. Solution and verification
+   reports are private in guided mode: do not return their links or answers. Provider
    mocks are not proof of real TTS.
 
 All one-off files/caches belong in the same session. Put helper scripts under

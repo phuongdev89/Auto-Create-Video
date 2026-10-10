@@ -105,18 +105,28 @@ Sơ đồ khai báo trong khung 900×500; hình phức tạp hơn cần mở r�
 
 ## Chạy pipeline
 
+Trước TTS/render, API kiểm chứng phải đạt. Điền `AUDIT_AI_CHAT_URL`, `AUDIT_AI_KEY`,
+`AUDIT_AI_MODEL`, `AUDIT_AI_STREAM` và `AUDIT_AI_TIMEOUT` (giây) trong cấu hình.
+Hai lượt API lần lượt giải từ đề gốc và đối chiếu lời giải/kịch bản. Xem
+[quy tắc kiểm chứng](docs/math-verification-rules.md). Lỗi, bất đồng hoặc thiếu
+bằng chứng chặn sản xuất; không tự cho qua. Báo cáo AI không phải chứng minh hình thức.
+
 Tạo session riêng và sao chép ví dụ phù hợp với lựa chọn:
 
 ```powershell
 $mathRun = Join-Path 'output' ((Get-Date -Format 'yyyyMMdd-HHmmss') + '-huong-dan-phuong-trinh')
 New-Item -ItemType Directory -Path $mathRun
 Copy-Item examples/math/algebra-guided.json (Join-Path $mathRun 'script.json')
+Copy-Item examples/math/algebra-solution.md (Join-Path $mathRun 'solution.md')
 npm run pipeline -- "$mathRun/script.json" --validate
+npm run pipeline -- "$mathRun/script.json" --audit
 npm run pipeline -- "$mathRun/script.json"
 ```
 
 `--validate` không gọi TTS và không cần API key. `--no-render` tạo audio/composition
-để preview, vẫn gọi TTS khi chưa có audio hợp lệ. CLI nhận kịch bản đã chuẩn bị;
+để preview, vẫn yêu cầu audit đạt và gọi TTS khi chưa có audio hợp lệ. `--audit`
+chỉ kiểm chứng, không gọi TTS/render; `--audit --force-audit` chạy lại dù có cache.
+Pipeline và `rerender` chỉ tái sử dụng pass khớp nội dung hiện tại. CLI nhận kịch bản đã chuẩn bị;
 lựa chọn bấm được hiển thị bởi agent trong chat.
 
 ```powershell
@@ -136,7 +146,9 @@ tạo lại. HyperFrames được cố định ở version 0.8.143 và check tr�
 giữ nguyên tệp người dùng và các lượt chạy khác. SFX mặc định tắt.
 
 `solution.md` ghi lời giải và kiểm chứng nội bộ. Trong chế độ hướng dẫn, không
-chia sẻ file này với người xem vì chứa đáp án. Đầu ra công bố chỉ gồm tài liệu
+chia sẻ file này hoặc `verification.json`/`verification.md` với người xem vì chứa
+đáp án. Các báo cáo ghi lời giải độc lập, bằng chứng đối chiếu, trạng thái và
+fingerprint để tránh dùng lại kết quả cũ sau khi sửa bài. Đầu ra công bố chỉ gồm tài liệu
 hướng dẫn, lời đọc và video đã kiểm tra không lộ kết quả cuối.
 
 Kiểm tra chữ/công thức, thứ tự đọc, độ đọc được và audio trên MP4 cuối. Phân biệt

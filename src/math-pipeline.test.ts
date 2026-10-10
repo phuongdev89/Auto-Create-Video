@@ -2,13 +2,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import nock from "nock";
+import { completion, independentFixture, reviewFixture } from "./audit/test-fixtures.js";
 
 const mocks = vi.hoisted(() => ({ generate: vi.fn(), english: vi.fn(), preflight: vi.fn() }));
 vi.mock("./tts/tts-client.js", () => ({ createTtsClient: () => ({ generate: mocks.generate }), createEnglishTtsClient: (...args: unknown[]) => { mocks.preflight(...args); return { generate: mocks.english }; } }));
 import { runPipeline } from "./pipeline.js";
 
 let session: string;
-afterEach(async () => { if (session) await rm(session, { recursive: true, force: true }); vi.unstubAllEnvs(); vi.clearAllMocks(); });
+afterEach(async () => { if (session) await rm(session, { recursive: true, force: true }); nock.cleanAll(); vi.unstubAllEnvs(); vi.clearAllMocks(); });
 const tone = async (_text: string, out: string) => {
   execFileSync("ffmpeg", ["-y", "-v", "error", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "0.35", out]);
 };
@@ -19,9 +21,22 @@ async function setup(example: string) {
   mocks.generate.mockImplementation(tone); mocks.english.mockImplementation(tone); mocks.preflight.mockImplementation(() => {});
   const data = JSON.parse(await readFile(`examples/math/${example}.json`, "utf8"));
   await writeFile(join(session, "script.json"), JSON.stringify(data));
+  await writeFile(join(session, "solution.md"), "Unit-test private solution: complete derivation is supplied to mocked verifier.");
+  vi.stubEnv("AUDIT_AI_CHAT_URL", "https://audit.example/v1"); vi.stubEnv("AUDIT_AI_KEY", "test-audit-key");
+  vi.stubEnv("AUDIT_AI_MODEL", "test-verifier"); vi.stubEnv("AUDIT_AI_STREAM", "false"); vi.stubEnv("AUDIT_AI_TIMEOUT", "10");
+  nock("https://audit.example").persist().post("/v1/chat/completions").reply(200, (_uri, body: any) =>
+    completion(body.messages[0].content.includes("Solve the ORIGINAL") ? independentFixture() : reviewFixture()));
   return data;
 }
 describe("math production orchestration", () => {
+  it("blocks all TTS calls and transcript production when audit fails", async () => {
+    await setup("algebra"); nock.cleanAll();
+    nock("https://audit.example").post("/v1/chat/completions").reply(503);
+    await expect(runPipeline(join(session, "script.json"), { render: false })).rejects.toThrow(/blocked/);
+    expect(mocks.generate).not.toHaveBeenCalled(); expect(mocks.english).not.toHaveBeenCalled();
+    await expect(readFile(join(session, "script.txt"))).rejects.toThrow();
+    expect(JSON.parse(await readFile(join(session, "verification.json"), "utf8")).status).toBe("unverified");
+  });
   it("produces guided audio, transcript and composition without an answer scene", async () => {
     const data = await setup("algebra-guided");
     await runPipeline(join(session, "script.json"), { render: false });

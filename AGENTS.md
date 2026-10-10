@@ -4,6 +4,7 @@
 
 - Ưu tiên `/create-math-video` cho mọi cấp độ. Đọc [workflow](docs/math-video-workflow.md).
 - Dùng kịch bản version `2.0`, giải và kiểm chứng trước khi dựng video.
+- Tuân thủ [quy tắc kiểm chứng toán](docs/math-verification-rules.md). Lưu lời giải đầy đủ vào `solution.md`, chạy `--audit` qua `AUDIT_AI_*`; chỉ tiếp tục khi báo cáo nội bộ đạt `pass`. Không công bố `solution.md` hoặc `verification.*` ở chế độ hướng dẫn.
 - Đọc và áp dụng [quy tắc sư phạm toán](docs/math-pedagogy-rules.md) trước khi viết lời giảng; rà soát mục cuối tài liệu trước khi trả bài hoặc gọi TTS.
 - Không ép bài giảng vào một phút/tám cảnh. Giữ đầy đủ đề, giả thiết và bước kiểm tra.
 - Khi nhận yêu cầu giải toán, trước khi giải hoặc viết kịch bản phải hiển thị lựa chọn để người dùng bấm: **Giải ra đáp án** / **Hướng dẫn giải và để ngỏ đáp án**. Đọc mục "Chọn cách giải" trong [workflow](docs/math-video-workflow.md) và chờ người dùng chọn; không tự chọn mặc định.

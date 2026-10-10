@@ -14,6 +14,7 @@ import { renderWithHyperframes } from "./render/hyperframes-runner.js";
 import { log } from "./utils/logger.js";
 import { copyMathAssets } from "./render/math-composer.js";
 import { mathAudioFingerprint } from "./tts/audio-cache.js";
+import { verifyMathLesson } from "./audit/math-verifier.js";
 
 const TOTAL_STEPS = 8;
 const DURATION_MIN_SEC = 48;
@@ -65,6 +66,10 @@ export async function runPipeline(scriptPath: string, options: { render?: boolea
   }
   // Validate English Vbee settings before any Vietnamese provider calls.
   const englishClient = isMath && script.problem.language === "en" ? createEnglishTtsClient(cfg) : undefined;
+  if (isMath) {
+    log.info("Verify the complete math solution and lesson before TTS (or reuse a matching pass).");
+    await verifyMathLesson(script, outputDir);
+  }
 
   // STEP 2
   log.step(2, TOTAL_STEPS, "Write script.txt for CapCut");

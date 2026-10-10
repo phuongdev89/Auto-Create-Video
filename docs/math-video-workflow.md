@@ -10,6 +10,10 @@ Agent đọc đề, giải và kiểm chứng độc lập. Pipeline kiểm tra 
 không phải bộ giải toán hoặc hệ chứng minh. Khi thiếu dữ kiện, ảnh mờ hoặc chưa
 kiểm chứng được đáp án, báo rõ; không dựng video khẳng định kết quả chưa có căn cứ.
 Đọc [quy tắc lời thoại](voice-text-rules.md) trước khi viết kịch bản.
+Đọc [quy tắc kiểm chứng toán](math-verification-rules.md). Sau khi có lời giải
+đầy đủ và kịch bản, chạy `--audit`: API giải độc lập từ đề gốc rồi đối chiếu bài
+giảng. `--validate` chỉ kiểm tra cấu trúc; TTS/render cần báo cáo audit `pass`
+khớp nội dung hiện tại. Thiếu cấu hình hoặc bằng chứng phải dừng.
 Đọc [quy tắc sư phạm toán](math-pedagogy-rules.md) để chọn cách giải thích phù hợp
 kiến thức nền, giải thích lý do của bước làm và xác định phần tự làm trong chế độ
 hướng dẫn. Rà soát mục cuối tài liệu trước khi trả bài hoặc gọi TTS.
@@ -112,11 +116,14 @@ Tạo script trong output/<session>/ rồi chạy từ root:
 
 ```powershell
 npm run pipeline -- output/<session>/script.json --validate
+npm run pipeline -- output/<session>/script.json --audit
 npm run pipeline -- output/<session>/script.json
 ```
 
 --validate không gọi TTS và không cần API key. --no-render tạo audio/composition
-để preview, vẫn gọi provider khi thiếu audio. Video toán qua hyperframes check
+để preview, vẫn cần audit đạt và gọi provider khi thiếu audio. `--audit` chỉ gọi
+API kiểm chứng, không gọi TTS/render; cần `solution.md` trong session. `problem.imagePaths`
+khai báo ảnh đề gốc cần kiểm tra. Video toán qua hyperframes check
 trước render. SFX mặc định tắt; có thể bật qua scene.sfx.
 
 Cache MP3 toán theo nội dung và cấu hình giọng. Đổi lời đọc/giọng/provider sẽ tạo lại

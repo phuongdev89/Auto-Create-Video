@@ -15,6 +15,7 @@ import { composeHtml } from "./src/render/html-composer.js";
 import { renderWithHyperframes } from "./src/render/hyperframes-runner.js";
 import { copyMathAssets } from "./src/render/math-composer.js";
 import { mathAudioFingerprint } from "./src/tts/audio-cache.js";
+import { verifyMathLesson } from "./src/audit/math-verifier.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TPL_DIR = join(__dirname, "src", "render", "templates");
@@ -45,6 +46,7 @@ async function main() {
     raw.voice.voiceId = cfg.ttsProvider === "lucylab" ? cfg.lucylabVoiceId! : cfg.elevenlabsVoiceId!;
   }
   const script = ScriptSchema.parse(raw);
+  if (script.version === "2.0") await verifyMathLesson(script, outputDir);
 
   // Probe per-scene durations from existing voice files
   const sceneAudio = await Promise.all(

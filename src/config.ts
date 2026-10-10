@@ -4,6 +4,33 @@ loadEnv({ path: [".env.local", ".env"], quiet: true });
 
 export type TtsProvider = "lucylab" | "elevenlabs" | "vbee";
 
+export interface AuditConfig {
+  chatUrl: string;
+  apiKey: string;
+  model: string;
+  stream: boolean;
+  timeoutMs: number;
+}
+
+/** Independent of TTS credentials so verification can run before production. */
+export function loadAuditConfig(): AuditConfig {
+  const required = (name: string) => {
+    const value = process.env[name]?.trim();
+    if (!value || /^(sk-)?x+$|xxxxxxxx|your_/i.test(value)) throw new Error(`Missing real ${name}; configure .env.local or .env.`);
+    return value;
+  };
+  const base = new URL(required("AUDIT_AI_CHAT_URL"));
+  if (!["https:", "http:"].includes(base.protocol) || base.username || base.password || base.search || base.hash)
+    throw new Error("AUDIT_AI_CHAT_URL must be an HTTP(S) URL without embedded credentials, query or fragment.");
+  const stream = process.env.AUDIT_AI_STREAM?.trim() ?? "true";
+  if (!["true", "false"].includes(stream)) throw new Error("AUDIT_AI_STREAM must be true or false.");
+  const timeout = Number(process.env.AUDIT_AI_TIMEOUT ?? "300");
+  if (!Number.isFinite(timeout) || timeout <= 0 || timeout > 3600) throw new Error("AUDIT_AI_TIMEOUT must be seconds in (0, 3600].");
+  const path = base.pathname.replace(/\/+$/, "");
+  base.pathname = path.endsWith("/chat/completions") ? path : `${path}/chat/completions`;
+  return { chatUrl: base.toString(), apiKey: required("AUDIT_AI_KEY"), model: required("AUDIT_AI_MODEL"), stream: stream === "true", timeoutMs: timeout * 1000 };
+}
+
 export interface TiktokConfig {
   displayName: string;
   handle: string;
