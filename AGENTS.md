@@ -4,8 +4,10 @@
 
 - Ưu tiên `/create-math-video` cho mọi cấp độ. Đọc [workflow](docs/math-video-workflow.md).
 - Dùng kịch bản version `2.0`, giải và kiểm chứng trước khi dựng video.
+- Đọc và áp dụng [quy tắc sư phạm toán](docs/math-pedagogy-rules.md) trước khi viết lời giảng; rà soát mục cuối tài liệu trước khi trả bài hoặc gọi TTS.
 - Không ép bài giảng vào một phút/tám cảnh. Giữ đầy đủ đề, giả thiết và bước kiểm tra.
-- Workflow tin tức version `1.0` giữ cho tương thích khi người dùng cần.
+- Khi nhận yêu cầu giải toán, trước khi giải hoặc viết kịch bản phải hiển thị lựa chọn để người dùng bấm: **Giải ra đáp án** / **Hướng dẫn giải và để ngỏ đáp án**. Đọc mục "Chọn cách giải" trong [workflow](docs/math-video-workflow.md) và chờ người dùng chọn; không tự chọn mặc định.
+- Lưu lựa chọn vào `solutionMode` của kịch bản. Chế độ hướng dẫn giữ đáp án cuối ngoài lời đọc, hình, phụ đề và kết quả trả cho người xem; vẫn giải và kiểm chứng nội bộ.
 
 ## Persona, Voice & Personal Pronouns
 

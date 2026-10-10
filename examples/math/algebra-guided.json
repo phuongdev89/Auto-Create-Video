@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "solutionMode": "guided",
+  "metadata": { "title": "Hướng dẫn tìm x — các em tự hoàn thành", "channel": "Học Toán cùng thầy" },
+  "problem": { "original": "Tìm x biết: 2x + 5 = 17.", "language": "vi", "topic": "Phương trình", "level": "THCS" },
+  "voice": { "provider": "lucylab", "voiceId": "${VOICE_ID}", "gender": "male", "speed": 1 },
+  "scenes": [
+    { "id": "opening", "type": "hook", "phase": "introduction", "voiceText": "Thầy chào các em. Hôm nay thầy hướng dẫn cách giải phương trình và để các em tự tìm đáp án cuối.", "templateData": { "template": "math-intro", "title": "Tìm x theo gợi ý", "subtitle": "Hiểu cách làm rồi tự hoàn thành" } },
+    { "id": "problem", "type": "body", "phase": "problem", "voiceText": "Đề bài yêu cầu tìm x, biết hai nhân x cộng năm bằng mười bảy.", "templateData": { "template": "math-problem", "title": "Đề bài", "text": "Tìm x biết: 2x + 5 = 17.", "latex": "2x + 5 = 17" } },
+    { "id": "strategy", "type": "body", "phase": "strategy", "voiceText": "Mục tiêu là đưa x đứng riêng. Thầy thực hiện cùng một phép tính ở cả hai vế để giữ phương trình tương đương.", "templateData": { "template": "math-step", "title": "Hướng giải", "explanation": "Loại phần cộng thêm, rồi xử lý hệ số của x.", "equations": ["2x + 5 = 17"] } },
+    { "id": "subtract", "type": "body", "phase": "solution", "voiceText": "Trừ năm ở cả hai vế. Các em tự tính vế phải và rút gọn vế trái nhé.", "templateData": { "template": "math-step", "title": "Bước 1: Trừ 5 ở hai vế", "equations": ["2x + 5 - 5 = 17 - 5"], "note": "Tự rút gọn trước khi sang bước tiếp theo." } },
+    { "id": "divide", "type": "body", "phase": "solution", "voiceText": "Khi còn hai nhân x ở vế trái, hãy chia cả hai vế cho hai. Thầy để các em tự thực hiện phép chia và tìm giá trị của x.", "templateData": { "template": "math-step", "title": "Bước 2: Chia cả hai vế cho 2", "explanation": "Sau khi rút gọn, chia hai vế cho hệ số của x.", "note": "Các em tự tính kết quả cuối." } },
+    { "id": "check", "type": "body", "phase": "check", "voiceText": "Sau khi tìm được x, hãy thay giá trị đó vào đề bài. Tính hai nhân giá trị vừa tìm cộng năm, rồi kiểm tra xem có bằng mười bảy không.", "templateData": { "template": "math-step", "title": "Cách tự kiểm tra", "explanation": "Thay giá trị vừa tìm vào vế trái. Nếu vế trái bằng 17 thì kết quả thỏa mãn đề bài." } },
+    { "id": "practice", "type": "body", "phase": "practice", "voiceText": "Bây giờ các em hãy tự viết giá trị của x và phép tính kiểm tra. Các em tìm được kết quả nào?", "templateData": { "template": "math-step", "title": "Các em tự hoàn thành", "explanation": "Tìm x và viết phép tính kiểm tra của em.", "equations": ["x = \\; ?"] } },
+    { "id": "closing", "type": "outro", "phase": "closing", "voiceText": "Thầy chúc các em học tốt và tự tin hoàn thành bài toán.", "templateData": { "template": "math-closing", "message": "Thầy chúc các em học tốt và tự tin hoàn thành bài toán." } }
+  ]
+}

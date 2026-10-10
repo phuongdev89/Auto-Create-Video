@@ -5,20 +5,37 @@ description: "Tạo video giải toán và giảng bài từng bước từ đ�
 
 # Create Math Video
 
-Use for math solution videos and animated lessons in this project.
+Use for math requests, solution videos and animated lessons in this project.
+
+Before solving or drafting, follow "Chọn cách giải" in the shared workflow.
+Show a clickable question with exactly "Giải ra đáp án" and "Hướng dẫn giải và
+để ngỏ đáp án" using the chat's question tool (Codex: request_user_input_async;
+request_user_input only when available and allowed). Wait for an actual response,
+never infer it from a preselected option or a timeout. Reuse the choice when
+continuing the same problem; ask again for a new problem. Save solutionMode as
+answer or guided. In guided mode, verify privately, teach the method, leave the
+decisive step for the learner, and do not disclose the final answer anywhere in
+the delivered text, visuals, narration, subtitles or links to private solution.md.
 
 1. Read [shared workflow](../../../docs/math-video-workflow.md) and
-   [narration rules](../../../docs/voice-text-rules.md). Use the actual v2 schema
-   in src/render/math-schema.ts, not the old news design spec.
+   [narration rules](../../../docs/voice-text-rules.md), plus
+   [math pedagogy rules](../../../docs/math-pedagogy-rules.md) before teaching.
+   Explain why key steps work, match prerequisite knowledge, and leave a
+   meaningful learner step in guided mode. Review the pedagogy checklist
+   before delivering the lesson or calling TTS. Use the actual v2 schema
+   in src/render/math-schema.ts.
 2. Read/transcribe the complete problem including diagram, units and choices.
    Resolve unreadable/missing data before claiming a solution.
 3. Solve and independently check. Save original input and solution.md in a unique
    output/<session>/. Code validates production structure, not mathematical truth.
 4. Write script.json version 2.0 there. Use examples/math/ as runnable references.
    Prefer one reasoning step per scene, retaining domain restrictions and cases.
+   Guided scripts omit problem.answer and all answer scenes/templates; require
+   strategy, solution hints, a check explaining how to self-check, and one
+   practice scene using math-step. Review for answer leaks before TTS.
    Any grade/topic is allowed. Do not impose one minute or eight scenes.
 5. Use the male teacher persona. Greeting → today's purpose → full problem →
-   solution → verification → answer → closing wish. English problems require
+   solution → verification → answer (guided: practice) → closing wish. English problems require
    opening/announcement → verbatim Vbee English TTS (`VBEE_VOICE_CODE_EN=am_echo`) at 0.9× → complete
    Vietnamese translation → solution. English uses englishText outside voiceText.
    Vietnamese numbers/operators are written in words.

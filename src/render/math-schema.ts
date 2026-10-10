@@ -28,7 +28,7 @@ export const MathTemplateData = z.discriminatedUnion("template", [
 const MathScene = z.object({
   id: z.string().regex(/^[a-zA-Z0-9_-]+$/, "Scene id must be a safe filename"),
   type: z.enum(["hook", "body", "outro"]),
-  phase: z.enum(["introduction", "problem", "read-english", "read-translation", "strategy", "solution", "check", "answer", "closing"]),
+  phase: z.enum(["introduction", "problem", "read-english", "read-translation", "strategy", "solution", "check", "answer", "practice", "closing"]),
   voiceText: z.string().default(""),
   englishText: text.optional(),
   templateData: MathTemplateData,
@@ -37,13 +37,14 @@ const MathScene = z.object({
 const normalized = (s: string) => s.replace(/\s+/g, " ").trim();
 export const MathScriptSchema = z.object({
   version: z.literal("2.0"),
+  solutionMode: z.enum(["answer", "guided"]).default("answer"),
   metadata: z.object({
     title: text, channel: text.default("Học Toán cùng thầy"),
     source: z.object({ url: z.string().default("local"), domain: z.string().default("Bài học toán"),
       image: z.string().url().nullable().default(null) }).default({ url: "local", domain: "Bài học toán", image: null }),
   }),
   problem: z.object({ original: text, language: z.enum(["vi", "en"]).default("vi"),
-    translation: text.optional(), answer: latex, topic: text.optional(), level: text.optional() }),
+    translation: text.optional(), answer: latex.optional(), topic: text.optional(), level: text.optional() }),
   voice: z.object({ provider: z.enum(["lucylab", "elevenlabs", "vbee"]), voiceId: text,
     gender: z.literal("male"), speed: z.number().min(0.5).max(1.9).default(1) }),
   scenes: z.array(MathScene).min(6).max(100),
@@ -55,7 +56,7 @@ export const MathScriptSchema = z.object({
       introduction: ["math-intro"], problem: ["math-problem"], "read-english": ["math-problem"],
       "read-translation": ["math-problem"], strategy: ["math-step", "math-diagram"],
       solution: ["math-step", "math-diagram"], check: ["math-step", "math-diagram"],
-      answer: ["math-answer"], closing: ["math-closing"],
+      answer: ["math-answer"], practice: ["math-step"], closing: ["math-closing"],
     };
     if (!allowed[scene.phase].includes(scene.templateData.template)) issue("Template must match the lesson phase", ["scenes", i, "templateData"]);
     if (scene.templateData.template === "math-step" && !scene.templateData.equations.length && !scene.templateData.explanation && !scene.templateData.note)
@@ -87,11 +88,21 @@ export const MathScriptSchema = z.object({
     issue("Only the first scene opens and only the final scene closes the lesson");
   const phases = s.scenes.map(x => x.phase);
   const solution = phases.indexOf("solution"), check = phases.indexOf("check"), answer = phases.indexOf("answer");
-  if (solution < 0 || check <= solution || answer <= check) issue("Include solution → check → answer, in that order");
-  if (phases.lastIndexOf("solution") >= check || phases.lastIndexOf("check") >= answer) issue("Finish all solution steps before verification and the answer");
-  const answerScenes = s.scenes.filter(x => x.phase === "answer");
-  if (answerScenes.length !== 1 || answerScenes[0]?.templateData.template !== "math-answer" || answerScenes[0].templateData.answer !== s.problem.answer)
-    issue("One math-answer scene must match problem.answer exactly");
+  const ending = s.solutionMode === "guided" ? phases.indexOf("practice") : answer;
+  if (solution < 0 || check <= solution || ending <= check) issue("Include solution → check → answer or practice, in that order");
+  if (phases.lastIndexOf("solution") >= check || phases.lastIndexOf("check") >= ending) issue("Finish all solution steps before verification and the answer or practice");
+  if (s.solutionMode === "guided") {
+    if (s.problem.answer !== undefined || answer >= 0 || s.scenes.some(x => x.templateData.template === "math-answer"))
+      issue("Guided lessons must omit problem.answer and answer scenes; leave the final answer open");
+    if (!phases.includes("strategy") || phases.filter(p => p === "practice").length !== 1)
+      issue("Guided lessons require a strategy and one practice scene for the learner to finish");
+  } else {
+    if (!s.problem.answer) issue("Answer lessons require problem.answer", ["problem", "answer"]);
+    const answerScenes = s.scenes.filter(x => x.phase === "answer");
+    if (answerScenes.length !== 1 || answerScenes[0]?.templateData.template !== "math-answer" || answerScenes[0].templateData.answer !== s.problem.answer)
+      issue("One math-answer scene must match problem.answer exactly");
+    if (phases.includes("practice")) issue("Practice scenes are reserved for guided lessons");
+  }
   if (s.problem.language === "en") {
     const english = s.scenes.filter(x => x.phase === "read-english");
     const translated = s.scenes.filter(x => x.phase === "read-translation");
@@ -100,14 +111,14 @@ export const MathScriptSchema = z.object({
     if (!translated.length || normalized(translated.map(x => x.templateData.template === "math-problem" ? x.templateData.text : "").join(" ")) !== normalized(s.problem.translation ?? ""))
       issue("Display and read the complete Vietnamese translation", ["problem", "translation"]);
     if (!/tiếng Anh/iu.test(first.voiceText)) issue("Announce reading the English problem in the opening");
-    const ranks: Record<string, number> = { introduction: 0, "read-english": 1, "read-translation": 2, strategy: 3, solution: 4, check: 5, answer: 6, closing: 7 };
+    const ranks: Record<string, number> = { introduction: 0, "read-english": 1, "read-translation": 2, strategy: 3, solution: 4, check: 5, answer: 6, practice: 6, closing: 7 };
     if (phases.some((p, i) => ranks[p] === undefined || (i > 0 && ranks[p] < ranks[phases[i - 1]])))
-      issue("English lesson order: opening → English original → Vietnamese translation → solution → check → answer → wish");
+      issue("English lesson order: opening → English original → Vietnamese translation → solution → check → answer or practice → wish");
   } else {
     const problems = s.scenes.filter(x => x.phase === "problem");
     if (!problems.length || normalized(problems.map(x => x.templateData.template === "math-problem" ? x.templateData.text : "").join(" ")) !== normalized(s.problem.original))
       issue("Display the complete original problem before solving");
-    const ranks: Record<string, number> = { introduction: 0, problem: 1, strategy: 2, solution: 3, check: 4, answer: 5, closing: 6 };
+    const ranks: Record<string, number> = { introduction: 0, problem: 1, strategy: 2, solution: 3, check: 4, answer: 5, practice: 5, closing: 6 };
     if (phases.some((p, i) => ranks[p] === undefined || (i > 0 && ranks[p] < ranks[phases[i - 1]]))) issue("Read the problem before solution, check and answer");
   }
   if (/female/i.test(s.voice.voiceId)) issue("Select a male TTS voice", ["voice", "voiceId"]);

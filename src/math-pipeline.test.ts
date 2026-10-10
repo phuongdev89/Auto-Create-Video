@@ -22,6 +22,18 @@ async function setup(example: string) {
   return data;
 }
 describe("math production orchestration", () => {
+  it("produces guided audio, transcript and composition without an answer scene", async () => {
+    const data = await setup("algebra-guided");
+    await runPipeline(join(session, "script.json"), { render: false });
+    expect(mocks.generate).toHaveBeenCalledTimes(data.scenes.length);
+    expect(mocks.generate.mock.calls.map(([text]) => text).join(" ")).not.toMatch(/sáu|x = 6/);
+    const transcript = await readFile(join(session, "script.txt"), "utf8");
+    expect(transcript).toContain("Các em tìm được kết quả nào?");
+    expect(transcript).not.toMatch(/sáu|x = 6/);
+    const html = await readFile(join(session, "index.html"), "utf8");
+    expect(html).toContain('id="math-practice"');
+    expect(html).not.toContain('id="math-answer"');
+  }, 30000);
   it("creates composition/audio and regenerates only changed narration", async () => {
     const data = await setup("algebra"); const script = join(session, "script.json");
     await runPipeline(script, { render: false });

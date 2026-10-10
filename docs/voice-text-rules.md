@@ -1,97 +1,92 @@
-# Mandatory rules for `voiceText`
+# Quy tắc lời thoại giải toán
 
-The `voiceText` field is read aloud by Vbee/LucyLab/ElevenLabs Vietnamese TTS. **Numbers and symbols are read literally** — if you write "5.5", TTS may say "năm rưỡi" (five and a half — WRONG for version numbers). **Always spell out numbers in Vietnamese phonetic form** in Vietnamese `voiceText`; the verbatim English problem segment follows the separate English-reading rules below. The `templateData` fields (visual text on screen) can keep the original "5.5" / "82.7%" formatting.
+Nội dung giảng phải theo [quy tắc sư phạm toán](math-pedagogy-rules.md); tài liệu
+này quy định cách chuyển nội dung đó thành lời đọc và trình tự video.
 
-**Mandatory rules for `voiceText`:**
+Đây là quy tắc dùng chung cho `voiceText` tiếng Việt trong kịch bản toán version
+`2.0`. Lời đọc và text hiển thị là hai phần riêng: text trên hình có thể giữ chữ
+số, ký hiệu toán và icon; lời đọc viết số và phép toán bằng chữ.
 
-- Use a male TTS voice. When addressing or teaching the audience, always use **"thầy"** and call viewers **"các bạn nhỏ"**, **"các em"**, or **"các con"**. Never use **"cô"** in scripts, narration, subtitles, or UI cards.
-- Spell out every number and mathematical sign in Vietnamese, including whole numbers, years, and numbers in brand/version names. Write `cộng`, `trừ`, `nhân`, `chia`, `bằng` instead of mathematical symbols.
-- Keep `voiceText` free of emoji, Markdown, and URLs. Visual text may retain numbers and symbols but must follow the same personal-pronoun rules.
+## Giọng đọc và cách xưng hô
 
-| Number form | WRONG (TTS misreads) | RIGHT (spell out in Vietnamese) |
-|---|---|---|
-| Decimal version | `GPT 5.5` → "năm rưỡi" ❌ | `GPT năm chấm năm` ✅ |
-| Decimal stat | `82.7%` | `tám mươi hai phẩy bảy phần trăm` |
-| Version | `iPhone 17` | `iPhone mười bảy` |
-| Version with point | `iOS 18.2` | `iOS mười tám chấm hai` |
-| Tech spec | `200MP` | `hai trăm megapixel` |
-| Battery | `5000mAh` | `năm nghìn miliampe giờ` |
-| Tokens | `1M tokens` / `1000000 tokens` | `một triệu token` |
-| Price VND | `21 triệu đồng` | `hai mươi mốt triệu đồng` |
-| Price USD | `$5` | `năm đô la` (or `năm đô`) |
-| Multiplier | `2x` | `gấp đôi` (more natural than "hai lần") |
-| Year | `2026` | `hai nghìn không trăm hai mươi sáu` |
-| Percentage with decimal | `30%` | `ba mươi phần trăm` |
-| Time | `60 giây` | `sáu mươi giây` |
-| Frequency | `5G` | `năm gờ` (be careful — TTS often says "năm-gờ") |
+- Dùng giọng nam của provider đang cấu hình. Khi giảng hoặc nói với người xem,
+  luôn xưng **thầy**; gọi người học là **các em**, **các con** hoặc **các bạn nhỏ**.
+- Không dùng **cô** trong kịch bản, lời đọc, phụ đề hoặc nội dung hiển thị.
+- Với Vbee, lời Việt dùng `VBEE_VOICE_CODE_VI`, đề gốc tiếng Anh dùng
+  `VBEE_VOICE_CODE_EN=am_echo`. Hai giọng đều theo persona nam.
 
-**Notation choices:**
-- For version numbers, read the decimal point as `chấm`; for decimal statistics, use `phẩy`.
-- For thousands separators, read the whole value; do not pronounce the separator (e.g. "1,000" → "một nghìn").
-- For ratio "3:1" → say `ba trên một` or `ba so với một`
+## Viết lời đọc tiếng Việt
 
-**English brand names — keep as-is**, TTS handles them OK:
-- `Apple`, `Google`, `OpenAI`, `Microsoft`, `TikTok`, `YouTube` ✅
+- Viết tất cả chữ số và ký hiệu toán thành chữ: cộng, trừ, nhân, chia, bằng,
+  lớn hơn, nhỏ hơn, phần trăm. Không đưa công thức LaTeX vào `voiceText`.
+- Không dùng emoji, Markdown hoặc URL trong lời đọc.
+- Kết thúc mỗi câu bằng dấu chấm hoặc dấu chấm hỏi để ngắt nghỉ tự nhiên.
+- Dùng đúng thuật ngữ toán, đọc đầy đủ đơn vị và điều kiện; không đổi nội dung
+  đề khi chuyển từ ký hiệu sang lời nói.
 
-**English acronyms — write phonetically if TTS misreads:**
-- `AI` → usually OK, sometimes write `ây ai` for clarity
-- `API` → write `ây pi ai` if matter
-- `GPT` → usually OK; if not, write `gí pi tí`
-- `iOS` → write `ai ô ét` if matter
-- `AMO` → write `a mờ ô` if matter
-- `TIMO` → write `ti mô` if matter
-- `FMO` → write `ép mờ ô` if matter
-- `ASMO` → write `a ét mờ ô` if matter
-- `SEAMO` → write `si mờ ô` if matter
-- `HKIMO` → write `hát ca i mờ ô` if matter
-- `KANGAROO` → write `căng ga ru` if matter
-- `IKMC` → write `i ca mờ cê` if matter
+| Hiển thị | Lời đọc |
+|---|---|
+| `2x + 5 = 17` | hai nhân x cộng năm bằng mười bảy |
+| `3.5` hoặc `3,5` (số thập phân) | ba phẩy năm |
+| `1/2` | một phần hai |
+| `x²` | x bình phương |
+| `√9` | căn bậc hai của chín |
+| `30%` | ba mươi phần trăm |
+| `3:1` (tỉ lệ) | ba so với một |
+| `1 000` (số nguyên) | một nghìn |
+| `12 cm²` | mười hai xăng ti mét vuông |
 
-**Symbols to AVOID in voiceText:**
-- `→` `&` `%` `$` `#` `+` `-` `=` `*` `/` (TTS may say literal name or skip)
-- `!` `?` at end of sentence is OK — they create natural intonation
-- Emoji: NEVER (TTS pronounces or skips inconsistently)
-- URLs: NEVER (TTS reads dot/slash literally)
+Tên kỳ thi có thể viết theo cách đọc nếu TTS đọc sai: AMO → a mờ ô,
+TIMO → ti mô, FMO → ép mờ ô, ASMO → a ét mờ ô, SEAMO → si mờ ô,
+HKIMO → hát ca i mờ ô, KANGAROO → căng ga ru, IKMC → i ca mờ cê.
 
-**End each `voiceText` sentence with `.` or `?`** for natural pause/intonation.
+Ví dụ tách lời đọc và công thức hiển thị:
 
-**Examples — full scene:**
-
-WRONG (will sound bad):
-```json
-{ "voiceText": "GPT 5.5 đạt 82.7% trên Terminal-Bench, vượt GPT 5.4 (75.1%)." }
-```
-→ TTS reads: "GPT năm rưỡi đạt tám mươi hai chấm bảy phần trăm trên Terminal-Bench..."
-
-RIGHT (natural):
-```json
-{ "voiceText": "GPT năm chấm năm đạt tám mươi hai phẩy bảy phần trăm trên Terminal Bench, vượt phiên bản năm chấm bốn ở mức bảy mươi lăm phẩy một." }
-```
-
-**Note**: `templateData` (text on screen) CAN use original formatting — the visual is separate from spoken:
 ```json
 {
-  "voiceText": "GPT năm chấm năm đạt tám mươi hai phẩy bảy phần trăm.",
+  "voiceText": "Thầy trừ năm ở cả hai vế để giữ phương trình tương đương.",
   "templateData": {
-    "template": "stat-hero",
-    "value": "82.7%",                 ← Visual: keep readable formatting
-    "label": "Terminal-Bench"
+    "template": "math-step",
+    "title": "Trừ 5 ở hai vế",
+    "equations": ["2x + 5 - 5 = 17 - 5"]
   }
 }
 ```
 
 ## Trình tự mở đầu, đọc đề và kết thúc (bắt buộc)
 
-- Mọi video phải mở đầu bằng lời chào, sau đó nói rõ hôm nay sẽ làm gì; chỉ sau hai phần này mới vào nội dung. Ví dụ: "Thầy chào các bạn nhỏ. Hôm nay thầy cùng các con giải bài toán về phép cộng."
-- Nếu đề bài là tiếng Anh, tuân thủ đúng thứ tự:
-  1. Chào người xem bằng tiếng Việt.
-  2. Thông báo hôm nay sẽ học hoặc giải bài gì bằng tiếng Việt.
-  3. Thông báo sẽ bắt đầu đọc nguyên văn đề tiếng Anh. Ví dụ: "Trước tiên, thầy sẽ đọc nguyên văn đề bài bằng tiếng Anh."
-  4. Đọc toàn bộ đề tiếng Anh nguyên văn bằng **Vbee TTS**, giọng `VBEE_VOICE_CODE_EN=am_echo`, với tốc độ **0.9×**. Lời Việt dùng `VBEE_VOICE_CODE_VI` khi provider là Vbee.
-  5. Đọc bản dịch đầy đủ, chính xác sang tiếng Việt bằng giọng nam tiếng Việt; áp dụng quy tắc `voiceText` tiếng Việt cho bản dịch.
-  6. Chỉ sau khi đọc xong cả đề tiếng Anh và bản dịch tiếng Việt mới bắt đầu giải thích, giải bài hoặc hướng dẫn làm bài.
-- Giữ nguyên nội dung, thứ tự câu, số và ký hiệu của đề tiếng Anh; không dịch, tóm tắt hoặc phiên âm tiếng Việt cho đoạn nguyên văn này. Quy tắc viết số/ký hiệu bằng chữ tiếng Việt chỉ áp dụng cho lời dẫn, bản dịch và phần giảng tiếng Việt.
-- Tạo audio tiếng Anh riêng bằng Vbee với `VBEE_VOICE_CODE_EN` và speed `0.9`, rồi ghép đúng vị trí timeline. Không đưa nguyên văn tiếng Anh qua giọng Việt. Thiếu cấu hình Vbee thì báo lỗi trước khi gọi TTS Việt; không tự đổi provider.
-- Hiển thị đề gốc khi đọc tiếng Anh và bản dịch khi đọc tiếng Việt; căn thời lượng cảnh/phụ đề theo âm thanh thực tế. Không cắt ngắn đề hoặc bản dịch để ép video vào mốc khoảng sáu mươi giây.
-- Cuối mọi video phải có lời chúc phù hợp với nội dung, ở câu cuối cùng. Ví dụ: "Thầy chúc các con học tốt và luôn vui vẻ." Nếu có lời kêu gọi theo dõi, đặt trước lời chúc.
-- Đề gốc, bản dịch, audio và tệp trung gian dùng một lần đều nằm trong `output/<session>/`; helper script nằm trong thư mục con `scripts/`.
+- Mọi video: chào → nói hôm nay học/làm gì → nội dung → lời chúc. Ví dụ:
+  "Thầy chào các em. Hôm nay thầy cùng các em tìm hiểu cách giải phương trình."
+- Đề tiếng Anh phải theo đúng thứ tự:
+  1. Chào bằng tiếng Việt.
+  2. Nói hôm nay học hoặc giải bài gì.
+  3. Thông báo đọc nguyên văn tiếng Anh.
+  4. Đọc toàn bộ đề bằng Vbee TTS nam, `VBEE_VOICE_CODE_EN=am_echo`, tốc độ `0.9×`.
+  5. Đọc bản dịch Việt đầy đủ, chính xác bằng giọng nam tiếng Việt.
+  6. Bắt đầu lời giải hoặc hướng dẫn sau cả đề gốc và bản dịch.
+- Đề gốc tiếng Anh dùng `englishText` với `voiceText` rỗng. Giữ nguyên nội dung,
+  thứ tự câu, số và ký hiệu; không dịch, tóm tắt hoặc phiên âm đoạn này. Quy tắc
+  viết số bằng chữ tiếng Việt không áp dụng cho nguyên văn tiếng Anh.
+- Tạo audio tiếng Anh riêng bằng Vbee rồi ghép đúng timeline. Không đưa nguyên
+  văn tiếng Anh qua giọng Việt. Thiếu cấu hình Vbee phải dừng trước TTS Việt;
+  không tự đổi provider.
+- Hiển thị đề gốc khi đọc tiếng Anh, bản dịch khi đọc Việt. Căn thời lượng cảnh
+  theo audio thực tế; giữ đầy đủ nội dung, không ép thời lượng một phút.
+- CTA nếu có đặt trước lời chúc. Câu cuối là lời chúc phù hợp, ví dụ:
+  "Thầy chúc các em học tốt và luôn tự tin khi giải toán."
+- Tất cả tệp dùng một lần ở `output/<session>/`, helper ở `scripts/` của session.
+
+## Hai cách giải
+
+Trước khi giải, hỏi bằng lựa chọn bấm theo [workflow](math-video-workflow.md),
+mục "Chọn cách giải".
+
+- `answer`: trình bày đầy đủ lời giải, kiểm tra và đáp án trước lời chúc.
+- `guided`: hướng dẫn phương pháp và các bước, để người học tự hoàn thành bước
+  quyết định. Chỉ hướng dẫn cách tự kiểm tra, không đọc nghiệm để thay lại.
+  Kết thúc nội dung bằng câu hỏi hoặc nhiệm vụ tự làm (`practice`), rồi lời chúc.
+
+Với `guided`, rà soát lời đọc, công thức, tiêu đề, sơ đồ và phụ đề để không lộ
+đáp án cuối hoặc phương án trắc nghiệm đúng. Không hoàn tất lời giải rồi chỉ
+bỏ cảnh kết luận. Lời giải đầy đủ lưu riêng trong `solution.md` phục vụ kiểm
+chứng nội bộ và không được chia sẻ với người xem ở chế độ này.

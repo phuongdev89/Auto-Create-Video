@@ -6,8 +6,47 @@ import { composeHtml } from "./html-composer.js";
 const load = (file = "algebra") => JSON.parse(readFileSync(`examples/math/${file}.json`, "utf8"));
 
 describe("math lesson contract", () => {
-  it.each(["algebra", "geometry-english", "calculus"])("accepts verified example %s", file => {
+  it.each(["algebra", "algebra-guided", "geometry-english", "calculus"])("accepts verified example %s", file => {
     expect(ScriptSchema.parse(load(file)).version).toBe("2.0");
+  });
+  it("keeps existing lessons in answer mode and requires their answer", () => {
+    expect(MathScriptSchema.parse(load()).solutionMode).toBe("answer");
+    const s = load(); delete s.problem.answer;
+    expect(() => MathScriptSchema.parse(s)).toThrow(/require problem.answer/);
+  });
+  it("rejects final-answer fields and scenes in guided mode", () => {
+    const s = load("algebra-guided"); s.problem.answer = "x = 6";
+    expect(() => MathScriptSchema.parse(s)).toThrow(/leave the final answer open/);
+    const a = load("algebra-guided"); a.scenes.splice(-1, 0, load().scenes[6]);
+    expect(() => MathScriptSchema.parse(a)).toThrow(/leave the final answer open/);
+  });
+  it("requires a strategy and one practice after self-check in guided mode", () => {
+    const noStrategy = load("algebra-guided"); noStrategy.scenes.splice(2, 1);
+    expect(() => MathScriptSchema.parse(noStrategy)).toThrow(/require a strategy/);
+    const noPractice = load("algebra-guided"); noPractice.scenes.splice(6, 1);
+    expect(() => MathScriptSchema.parse(noPractice)).toThrow(/practice/);
+    const twice = load("algebra-guided"); twice.scenes.splice(7, 0, { ...twice.scenes[6], id: "practice-again" });
+    expect(() => MathScriptSchema.parse(twice)).toThrow(/one practice/);
+    const early = load("algebra-guided"); [early.scenes[5], early.scenes[6]] = [early.scenes[6], early.scenes[5]];
+    expect(() => MathScriptSchema.parse(early)).toThrow(/order|verification/);
+  });
+  it("rejects practice in answer mode and unknown modes", () => {
+    const s = load(); s.scenes.splice(-1, 0, load("algebra-guided").scenes[6]);
+    expect(() => MathScriptSchema.parse(s)).toThrow(/reserved for guided/);
+    const bad = load(); bad.solutionMode = "other";
+    expect(() => MathScriptSchema.parse(bad)).toThrow();
+  });
+  it("retains complete English reading and translation in guided mode", () => {
+    const s = load("algebra-guided");
+    s.problem.language = "en"; s.problem.translation = s.problem.original;
+    s.problem.original = "Find x such that 2x + 5 = 17.";
+    s.scenes[0].voiceText += " Trước tiên, thầy đọc đề bằng tiếng Anh.";
+    s.scenes[1].phase = "read-translation";
+    s.scenes.splice(1, 0, { id: "english", type: "body", phase: "read-english", voiceText: "", englishText: s.problem.original,
+      templateData: { template: "math-problem", text: s.problem.original } });
+    expect(MathScriptSchema.parse(s).solutionMode).toBe("guided");
+    s.scenes[2].templateData.text = "Bản dịch không đủ.";
+    expect(() => MathScriptSchema.parse(s)).toThrow(/complete Vietnamese translation/);
   });
   it("accepts lessons beyond eight scenes without cutting steps", () => {
     const s = load();
@@ -67,7 +106,7 @@ describe("math lesson contract", () => {
   });
 });
 describe("math composition", () => {
-  it.each(["algebra", "geometry-english", "calculus"])("renders %s with actual math markup and lesson branding", file => {
+  it.each(["algebra", "algebra-guided", "geometry-english", "calculus"])("renders %s with actual math markup and lesson branding", file => {
     const script = MathScriptSchema.parse(load(file));
     const html = composeHtml({ script, sceneAudio: script.scenes.map(s => ({ id: s.id, durationSec: 5 })), gapSec: .3, bgImageRelPath: null, audioRelPath: "voice.mp3" });
     expect(html).toContain('data-composition-id="math-video"');
@@ -77,6 +116,12 @@ describe("math composition", () => {
     expect(html).not.toContain("tt-card");
     expect(html).not.toContain("cdn.jsdelivr.net");
     if (file === "geometry-english") expect(html).toContain('viewBox="0 0 900 500"');
+    if (file === "algebra-guided") {
+      expect(html).toContain('id="math-practice"');
+      expect(html).toContain("Các em tự hoàn thành");
+      expect(html).not.toContain('id="math-answer"');
+      expect(JSON.stringify(script)).not.toMatch(/x = 6|sáu/);
+    }
     const total = script.scenes.length * 5 + (script.scenes.length - 1) * .3;
     expect(html).toContain(`data-duration="${(total + 3).toFixed(4)}"`);
     expect(html).toContain(`data-duration="${total.toFixed(4)}"`);

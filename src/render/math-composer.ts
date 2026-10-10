@@ -68,7 +68,7 @@ export function composeMathHtml(args: {
     </div><script>${animation}</script></body></html>`;
 }
 const phaseLabels = { introduction: "Hôm nay học gì?", problem: "Đọc đề", "read-english": "Đề gốc tiếng Anh",
-  "read-translation": "Bản dịch tiếng Việt", strategy: "Hướng giải", solution: "Lời giải", check: "Kiểm tra", answer: "Kết quả", closing: "Lời chúc" };
+  "read-translation": "Bản dịch tiếng Việt", strategy: "Hướng giải", solution: "Lời giải", check: "Kiểm tra", answer: "Kết quả", practice: "Các em tự hoàn thành", closing: "Lời chúc" };
 
 export async function copyMathAssets(outputDir: string): Promise<void> {
   const assets = join(outputDir, "math-assets");
