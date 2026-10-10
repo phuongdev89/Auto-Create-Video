@@ -52,6 +52,16 @@ trực tiếp hay phần trăm hoàn thành từ HyperFrames renderer. Không d�
 độ giả hoặc tự gọi TTS/render để tạo preview. Có thể ghi đè frame mới nhất
 trong session khi task đã chụp frame thật.
 
+## Xác định lớp trước khi giải
+
+Nếu đầu vào hoặc người dùng đã nêu lớp/trình độ rõ ràng, dùng thông tin đó; không hỏi lại khi tiếp tục cùng bài. Nếu chỉ có đề, hoặc chỉ biết tiểu học/THCS/THPT mà chưa biết lớp, agent phải tự phân tích trước khi giải: chủ đề, kiến thức tiên quyết, loại phép toán, ký hiệu, yêu cầu chứng minh và cách giải phù hợp. Không suy lớp chỉ từ độ lớn con số, tên file hoặc một từ khóa. Lớp suy đoán là khuyến nghị sư phạm, không khẳng định nguồn gốc đề hay chương trình chính thức.
+
+Sau phân tích, hiển thị câu hỏi bấm chọn **Bạn muốn thầy giảng bài này cho lớp mấy?**. Nêu khoảng lớp phù hợp và một lý do ngắn; mỗi lớp trong khoảng là một lựa chọn riêng, đánh dấu **Lớp N (Khuyến nghị)**. Ví dụ: “Kiến thức cần dùng là phương trình một ẩn; đề có thể phù hợp lớp 6–8. Thầy đề xuất lớp 7.” Các con số trong ví dụ chỉ minh họa, agent phải suy luận lại từ đề thực tế. Khi kiến thức không thuộc phổ thông, đưa lựa chọn trình độ tương ứng, không ép thành lớp 1–12. Nếu còn mơ hồ, đưa khoảng rộng hơn và nói rõ điểm chưa chắc; người dùng có thể nhập lớp/trình độ khác.
+
+Dùng `request_user_input_async` với các nhãn lớp trong `options`; có thể gộp câu hỏi lớp và câu hỏi cách giải trong một lần gọi, mỗi câu hỏi giữ lựa chọn riêng. Chờ câu trả lời thật cho cả hai trước khi giải, viết kịch bản hoặc gọi TTS/render; lựa chọn đánh dấu sẵn không phải xác nhận. Trong lúc chờ chỉ đọc đề và rà soát dữ kiện. Cập nhật progress “Chờ chọn lớp và cách giải”. Nếu không có công cụ chọn, hiển thị lựa chọn bằng văn bản và chờ.
+
+Lưu phân tích vào `output/<session>/grade-selection.json`: `source` (`inferred` hoặc `provided`), `suggestedGrades`, `recommendedGrade`, `reason`, `confidence`, `selectedGrade`. `selectedGrade` chỉ ghi sau câu trả lời thật (hoặc thông tin rõ ràng đã có trong đầu vào). Ghi lớp đã chọn vào `problem.level` của script, ví dụ `Lớp 7`; không ghi lớp khuyến nghị thay cho lớp người dùng chọn. Dùng lớp đã chọn để điều chỉnh phương pháp, thuật ngữ, kiến thức được phép dùng và lời giảng. Nếu người dùng đổi lớp sau khi audit, rà soát lại bài giảng và audit khi nội dung thay đổi.
+
 ## Chọn cách giải
 
 Khi nhận yêu cầu giải toán (kể cả chưa yêu cầu video), trước khi giải hoặc viết
@@ -89,7 +99,7 @@ phương án. Không chỉ đoán chữ cái.
 
 ## Duyệt lời giải và audit
 
-Thứ tự bắt buộc: nhận đề → hỏi/chờ chọn cách giải → giải và tự kiểm tra →
+Thứ tự bắt buộc: nhận đề → xác định lớp (phân tích và hỏi/chờ nếu thiếu) → hỏi/chờ chọn cách giải → giải và tự kiểm tra →
 chuẩn bị bản nháp kịch bản cho verifier → validate/audit → hiển thị phần duyệt
 cho người tạo → chọn concept (nếu tạo video) → TTS/render khi audit đạt.
 Không đi thẳng từ lựa chọn cách giải sang concept hay sản xuất. Yêu cầu chỉ giải

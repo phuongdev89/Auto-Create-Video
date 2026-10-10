@@ -7,7 +7,7 @@ description: "Tạo video giải toán và giảng bài từng bước từ đ�
 
 Use for math requests, solution videos and animated lessons in this project.
 
-Before solving or drafting, follow "Chọn cách giải" in the shared workflow.
+Before solving or drafting, follow "Xác định lớp trước khi giải" and "Chọn cách giải" in the shared workflow. If grade is missing or only a school stage is supplied, analyze prerequisites and recommend a grade with a short reason. Show clickable individual grade choices across the plausible range, marking the recommended grade. Wait for the user's actual grade choice and solution mode before solving. These two questions may be bundled. Save grade-selection.json in the session and the selected grade in problem.level; never replace the user choice with the inferred recommendation. Reuse a confirmed grade when continuing the same problem.
 At task start, launch `npm run progress -- output/<session>` in a persistent
 terminal before script.json exists, open the private creator URL, and keep it
 running through completion/failure. Follow "Progress realtime xuyên suốt task"
@@ -49,6 +49,10 @@ in the student lesson or concept gallery.
    solution.md. Copy necessary original diagrams into the session and declare
    problem.imagePaths; never substitute a reconstructed diagram for the source.
 4. Write script.json version 2.0 there. Use examples/math/ as runnable references.
+   For new videos, follow "Hook bằng thử thách cụ thể" in narration rules:
+   greet briefly, state today's concrete challenge and constraint, then ask a
+   question without revealing the solution. Declare math-intro.hookQuestion,
+   speak it verbatim in voiceText, and use teachingAid for relevant opening icons.
    Prefer one reasoning step per scene, retaining domain restrictions and cases.
    Guided scripts omit problem.answer and all answer scenes/templates; require
    strategy, solution hints, a check explaining how to self-check, and one
@@ -60,6 +64,12 @@ in the student lesson or concept gallery.
    Vietnamese translation → solution. English uses englishText outside voiceText.
    Vietnamese numbers/operators are written in words.
 6. Use math templates, LaTeX and declarative diagrams. Keep equations readable.
+   When the problem needs illustration, set problem.requiresIllustration=true
+   and mark each visual reasoning scene needsIllustration=true. Illustrate from
+   the first strategy/solution scene and synchronize each visual cue with its
+   spoken idea; do not defer all visuals until the final cases or answer.
+   Follow "Minh họa đồ vật và thao tác" in the pedagogy rules for icon continuity,
+   shared edges, grouping, cutting and connected-piece movement.
    SFX default off. Split long passages without losing source text.
    Validate the draft, then run --audit before opening concept selection.
    Read the actual verification report and show the full solution plus audit
@@ -89,3 +99,7 @@ in the student lesson or concept gallery.
 All one-off files/caches belong in the same session. Put helper scripts under
 output/<session>/scripts/ and execute them there. Preserve originals; reuse the
 same session when continuing the same run.
+
+### Giáo cụ theo từng bài
+Khi chọn manipulatives, tự thiết kế và dựng giáo cụ riêng từ đề và lời giải trong teachingAid của từng math-step theo docs/video-concepts.md. Không dùng bộ cân/giỏ cố định; không chỉ dùng thẻ phép tính. Khai báo ý nghĩa, hình học, số lượng, nhãn và cue; audit lại trước TTS/render. Kiểm tra giáo cụ thực tế ở cả hai tỷ lệ.
+

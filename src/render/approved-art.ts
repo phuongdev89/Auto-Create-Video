@@ -1,0 +1,5 @@
+/** Decorations contain no teaching facts. Numeric callouts copy supplied operations only. */
+export function approvedBackdrop(concept: string): string {
+  if (concept !== 'detective') return '';
+  return `<svg class="detective-felt" aria-hidden="true" width="100%" height="100%"><defs><filter id="felt-grain"><feTurbulence type="fractalNoise" baseFrequency=".55" numOctaves="3" seed="17"/><feColorMatrix type="saturate" values="0"/></filter></defs><rect width="100%" height="100%" fill="#25352d"/><rect width="100%" height="100%" opacity=".17" filter="url(#felt-grain)"/></svg><div class="detective-frame" aria-hidden="true"></div><svg class="detective-magnifier" aria-hidden="true" viewBox="0 0 220 235"><path d="M145 155 L191 209" stroke="#121711" stroke-width="34" stroke-linecap="round"/><path d="M147 157 L190 206" stroke="#6e4226" stroke-width="23" stroke-linecap="round"/><circle cx="88" cy="88" r="71" fill="#bcd6c40b" stroke="#c8aa6c" stroke-width="15"/><circle cx="88" cy="88" r="61" fill="none" stroke="#e2ce98" stroke-width="2"/><path d="M43 76 Q48 42 82 40" stroke="#ffffff65" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`;
+}

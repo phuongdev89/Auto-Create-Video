@@ -116,3 +116,58 @@ body[data-orientation="landscape"] .math-footer { bottom: 40px; font-size: 24px;
 body[data-orientation="landscape"] .math-intro-mark { margin-top: 35px; font-size: 190px; }
 body[data-orientation="landscape"] .math-diagram { max-height: 460px; }
 body[data-orientation="landscape"] .math-equation { padding: 20px 14px; margin-bottom: 20px; }
+
+/* Approved Giấy note / Thám tử v3 / Neon Lab art direction, 2026-10-10.
+   Vietnamese regular and bold faces are shipped together; math stays in KaTeX. */
+@font-face{font-family:Lesson;src:url(math-assets/fonts/lesson-regular.ttf);font-weight:400;font-style:normal}
+@font-face{font-family:Lesson;src:url(math-assets/fonts/lesson-bold.ttf);font-weight:700;font-style:normal}
+body:is([data-concept="news"],[data-concept="detective"],[data-concept="neon"]){font-family:Lesson,sans-serif}
+body:is([data-concept="news"],[data-concept="detective"],[data-concept="neon"]) h1{letter-spacing:0;line-height:1.18}
+body[data-concept="news"]{background:#f5efdf;color:#211e19;background-image:repeating-linear-gradient(0deg,transparent 0 7px,#211e1903 7px 8px)}
+[data-concept="news"] .math-brand{border-top:5px solid #211e19;border-bottom:1px solid #211e19;padding:18px 0;width:936px}
+[data-concept="news"] .math-brand small,[data-concept="news"] .math-footer,[data-concept="news"] .math-phase{color:#6b6255}
+[data-concept="news"] .math-board{padding:42px 24px}
+[data-concept="news"] h1{font-size:76px}
+[data-concept="news"] .math-equation{background:transparent;border:0;border-radius:0;border-bottom:1px solid #b5aa94;padding:28px 14px}
+[data-concept="news"] .math-equation::before{display:none}
+[data-concept="news"] .equation-operation{background:#f6ca55;color:#211e19;padding:8px 12px;border:0}
+[data-concept="news"] .math-note{background:#f6ca55;border-radius:0;color:#211e19;border-top:2px solid #211e19;border-bottom:2px solid #211e19;font-weight:700}
+[data-concept="news"] .math-logo{background:#b83a23;border-radius:0}
+.detective-felt{position:absolute;inset:0;pointer-events:none}.detective-frame{position:absolute;inset:18px;border:15px solid #69492f;box-shadow:inset 0 0 0 3px #a77f52;pointer-events:none}
+.detective-magnifier{position:absolute;right:75px;top:54px;width:150px;height:160px;pointer-events:none;filter:drop-shadow(5px 8px 4px #0006)}
+[data-concept="detective"] .math-board{background:transparent;box-shadow:none;padding:42px 30px;color:#2d281e}
+[data-concept="detective"] h1{background:#f0e3c4;padding:30px 34px;font-size:62px;position:relative;box-shadow:7px 9px 12px #0004;border:0}
+[data-concept="detective"] h1::before{content:'';position:absolute;top:-13px;right:45%;width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 25%,#dc8270,#983c30 65%);box-shadow:3px 5px 3px #0006}
+[data-concept="detective"] .direction-label,[data-concept="detective"] .math-phase{color:#f0e3c4}
+[data-concept="detective"] .math-content{border-color:#9e493b}
+[data-concept="detective"] .math-text,[data-concept="detective"] .math-problem-text{background:#f0e3c4;padding:22px 26px;box-shadow:5px 7px 10px #0004}
+[data-concept="detective"] .math-equation{background:#f0e3c4;border:0;border-radius:3px;padding:24px 14px;box-shadow:7px 9px 12px #0004}
+[data-concept="detective"] .math-equation::before{background:#983c30;border:2px solid #bc6951}
+[data-concept="detective"] .equation-operation{background:#edbc55;border:0;padding:8px 10px}
+[data-concept="detective"] .math-note{background:#f5dba4;color:#2d281e;border:0;border-bottom:4px solid #983c30;border-radius:0;font-weight:700}
+.has-operation-zoom{position:relative;padding-bottom:158px!important}
+.operation-zoom{position:absolute;bottom:14px;right:18px;width:260px;height:115px;background:#f0e3c4;border:3px solid #edbc55;text-align:center;font-size:37px;padding:8px;color:#2d281e;transform-origin:center}
+.operation-zoom small{display:block;font:700 15px Lesson,sans-serif;color:#675942;letter-spacing:0}.operation-zoom .katex-display{margin:8px 0 0}
+.operation-leader{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}.operation-leader path{fill:none;stroke:#edbc55;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+body[data-concept="neon"]{background:#0b1724;color:#e9f4ff;background-image:linear-gradient(#33577220 1px,transparent 1px),linear-gradient(90deg,#33577220 1px,transparent 1px);background-size:60px 60px}
+[data-concept="neon"] .math-equation{background:#173347;border:2px solid #65ddd5;border-radius:12px;box-shadow:0 0 20px #65ddd51a;color:#e9f4ff}
+[data-concept="neon"] .equation-operation{background:#ffd166;color:#13202a;border:0;padding:8px 12px;border-radius:8px;box-shadow:0 0 20px #ffd16625}
+[data-concept="neon"] .math-note{background:transparent;color:#ffd166;border-top:1px solid #32566c;border-radius:0;font-weight:700}
+[data-concept="neon"] .math-brand,[data-concept="neon"] .direction-label{color:#65ddd5}
+[data-concept="neon"] .math-content{background:#10223380;border:1px solid #32566c;border-radius:20px;padding:28px}
+body[data-orientation="landscape"][data-concept="news"] .math-brand{width:1792px}
+body[data-orientation="landscape"][data-concept="detective"] h1{font-size:52px;padding:28px}
+body[data-orientation="landscape"] .detective-magnifier{right:70px;top:24px;width:130px;height:140px}
+body[data-orientation="landscape"]:is([data-concept="news"],[data-concept="detective"],[data-concept="neon"]) .math-board{grid-template-rows:auto auto auto minmax(0,1fr)}
+/* Per-lesson teaching aids and approved notebook direction. */
+.teaching-aid{display:block;width:100%;height:auto;max-height:560px;margin:0 auto 24px;font-family:Lesson,sans-serif}
+body[data-concept="notebook"]{background:#fffdf2;color:#234a79;font-family:Lesson,sans-serif}
+[data-concept="notebook"] .math-board{background-color:#fffdf2;background-size:46px 46px;border:1px solid #dacfb7;box-shadow:none}
+[data-concept="notebook"] .math-equation{background:transparent;color:#234a79;border-bottom:2px solid #234a79}
+[data-concept="notebook"] .equation-operation{background:#f5d45d95;color:#234a79;padding:8px 10px}
+[data-concept="notebook"] .math-note{background:transparent;color:#b34246;border:2px solid #b34246;border-bottom:5px solid #b34246}
+body[data-concept="manipulatives"]{background:#eef5f3;color:#173f42;font-family:Lesson,sans-serif}
+[data-concept="manipulatives"] .math-board{background:#fffaf0;border-color:#b4c6bd;border-radius:28px}
+body[data-orientation="landscape"]:is([data-concept="notebook"],[data-concept="chalkboard"],[data-concept="manipulatives"]) .math-board{grid-template-rows:auto auto auto minmax(0,1fr)}
+body[data-orientation="landscape"] .teaching-aid{max-height:340px}
+.math-hook-question{font-size:1.3em;font-weight:800;line-height:1.3;padding:22px 26px;border-left:6px solid currentColor;margin:16px 0}

@@ -6,7 +6,7 @@ Lời giải, giọng nam và `solutionMode` độc lập với concept; đổi 
 
 | Lựa chọn | `visualConcept` | Cách thể hiện |
 |---|---|---|
-| News / Đồ họa biên tập | `news` | Tiêu đề lớn → brief dữ kiện → thẻ lập luận đánh số → đối chiếu → điểm nhớ. Hai phần phép tính có sẵn đi vào từ hai lề đồng thời. |
+| Giấy note | `news` | Nền giấy, tiêu đề lớn → dữ kiện → phép biến đổi được highlight → đối chiếu → điểm nhớ. Giữ ID `news` để tương thích kịch bản đã lưu. |
 | Thám tử | `detective` | Bìa hồ sơ → tài liệu đề → chuỗi manh mối có đường nối → sổ đối chiếu → tổng hợp. Phép tính có sẵn được ghim đồng thời vào hai vế. |
 | Neon Lab | `neon` | Tiêu đề lab → ô dữ kiện → đường biến đổi → khung kiểm tra → ô tổng kết. Hai phần phép tính hiện đồng thời; nét sơ đồ SVG vẽ theo thứ tự khai báo. |
 | Bảng phấn | `chalkboard` | Bảng tối có viền, nét công thức/sơ đồ sáng; các dòng xuất hiện từ trái. |
@@ -37,6 +37,10 @@ Kịch bản cũ không khai báo `visualConcept` vẫn dùng `classic`. Không 
 concept của video đã tạo. Với bài mới, agent chờ lựa chọn của người dùng.
 
 ## Nhóm vật minh họa
+
+Concept Đồ vật trực quan phải tự thiết kế và dựng giáo cụ riêng cho mỗi bài từ dữ kiện và lời giải. Không chọn từ thư viện giáo cụ cố định, không chỉ đổi màu hoặc bo góc thẻ công thức. Chỉ tái sử dụng kỹ thuật render, font và đồng bộ audio. Số lượng, nhãn và thao tác phải được khai báo và audit, không tự suy ra từ LaTeX. Mẫu thẻ và mẫu cân thử ngày 2026-10-10 chưa đạt yêu cầu thiết kế.
+
+Renderer hỗ trợ `teachingAid` trong `math-step`: `description` mô tả ý nghĩa toán học, `nodes` là hình `path` SVG hoặc `label`. Mỗi bài tự viết hình học và nhãn; không nhận HTML/JavaScript tùy ý. Node có `fill`, `stroke`, `strokeWidth`; label có `x`, `y`, `fontSize`. Canvas 900 × 500. `hideAt` từ 0 đến 0.9 là thời điểm ẩn theo tỷ lệ thời lượng cảnh, dùng cùng giá trị để lấy đồ khỏi hai phía đồng thời. Các trường nằm trong script nên được gửi audit và gắn fingerprint. Sửa giáo cụ cần audit lại. Agent phải kiểm tra hai tỷ lệ và frame thực tế; giáo cụ phức tạp cần tách cảnh. Hỗ trợ hiện tại là vẽ tùy biến và ẩn theo cue, chưa có trình biên tập giáo cụ bằng kéo thả.
 
 Template `math-step` có thể khai báo `objects`:
 

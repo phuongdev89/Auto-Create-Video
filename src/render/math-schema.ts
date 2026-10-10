@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { renderFormula } from "./math-expression.js";
 import { MathConceptId, MathObjects } from "./math-concepts.js";
+import { TeachingAid } from './teaching-aid.js';
 
 const text = z.string().trim().min(1);
 const latex = text.superRefine((value, ctx) => {
@@ -16,12 +17,13 @@ export const DiagramShape = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("label"), at: point, text, color }),
 ]);
 export const MathTemplateData = z.discriminatedUnion("template", [
-  z.object({ template: z.literal("math-intro"), title: text, subtitle: text.optional() }),
+  z.object({ template: z.literal("math-intro"), title: text, subtitle: text.optional(),
+    hookQuestion: text.optional(), teachingAid: TeachingAid.optional() }),
   z.object({ template: z.literal("math-problem"), title: text.default("Đề bài"), text, latex: latex.optional() }),
   z.object({ template: z.literal("math-step"), title: text, explanation: text.optional(),
-    equations: z.array(latex).max(4).default([]), note: text.optional(), objects: MathObjects.optional() }),
+    equations: z.array(latex).max(4).default([]), note: text.optional(), objects: MathObjects.optional(), teachingAid: TeachingAid.optional() }),
   z.object({ template: z.literal("math-diagram"), title: text, shapes: z.array(DiagramShape).min(1).max(100),
-    explanation: text.optional(), latex: latex.optional() }),
+    explanation: text.optional(), latex: latex.optional(), teachingAid: TeachingAid.optional() }),
   z.object({ template: z.literal("math-answer"), title: text.default("Đáp án"), answer: latex,
     explanation: text.optional(), takeaway: text.optional() }),
   z.object({ template: z.literal("math-closing"), title: text.default("Các em làm tốt lắm!"), message: text }),
@@ -33,6 +35,7 @@ const MathScene = z.object({
   voiceText: z.string().default(""),
   englishText: text.optional(),
   templateData: MathTemplateData,
+  needsIllustration: z.boolean().optional(),
   sfx: z.object({ name: text, volume: z.number().min(0).max(1).default(0.2), startOffsetSec: z.number().default(0) }).optional(),
 });
 const normalized = (s: string) => s.replace(/\s+/g, " ").trim();
@@ -47,14 +50,24 @@ export const MathScriptSchema = z.object({
   }),
   problem: z.object({ original: text, language: z.enum(["vi", "en"]).default("vi"),
     translation: text.optional(), answer: latex.optional(), topic: text.optional(), level: text.optional(),
-    imagePaths: z.array(text).max(10).optional() }),
+    imagePaths: z.array(text).max(10).optional(), requiresIllustration: z.boolean().optional() }),
   voice: z.object({ provider: z.enum(["lucylab", "elevenlabs", "vbee"]), voiceId: text,
     gender: z.literal("male"), speed: z.number().min(0.5).max(1.9).default(1) }),
   scenes: z.array(MathScene).min(6).max(100),
 }).superRefine((s, ctx) => {
   const issue = (message: string, path: (string | number)[] = ["scenes"]) => ctx.addIssue({ code: "custom", message, path });
   const ids = new Set<string>();
+  const hasIllustration = (td: MathTemplate) => td.template === "math-diagram"
+    || ((td.template === "math-step" || td.template === "math-intro") && Boolean(td.teachingAid))
+    || (td.template === "math-step" && Boolean(td.objects?.length));
+  if (s.problem.requiresIllustration) {
+    const firstReasoning = s.scenes.findIndex(scene => scene.phase === "strategy" || scene.phase === "solution");
+    if (firstReasoning >= 0 && !hasIllustration(s.scenes[firstReasoning].templateData))
+      issue("Illustrated problems need a visual in the first strategy or solution scene; do not defer it to the final example", ["scenes", firstReasoning, "templateData"]);
+  }
   s.scenes.forEach((scene, i) => {
+    if (scene.needsIllustration && !hasIllustration(scene.templateData))
+      issue("This narrated idea needs its own illustration in the same scene", ["scenes", i, "templateData"]);
     const allowed: Record<string, string[]> = {
       introduction: ["math-intro"], problem: ["math-problem"], "read-english": ["math-problem"],
       "read-translation": ["math-problem"], strategy: ["math-step", "math-diagram"],
@@ -80,6 +93,11 @@ export const MathScriptSchema = z.object({
       issue("Use the male teacher persona: thầy", ["scenes", i]);
   });
   const first = s.scenes[0], last = s.scenes.at(-1)!;
+  if (first.templateData.template === "math-intro" && first.templateData.hookQuestion) {
+    const question = first.templateData.hookQuestion;
+    if (!question.endsWith("?") || !normalized(first.voiceText).includes(normalized(question)))
+      issue("The opening hook question must end with ? and be spoken verbatim in voiceText", ["scenes", 0, "templateData", "hookQuestion"]);
+  }
   const opening = first.voiceText.trim().toLowerCase();
   if (first.type !== "hook" || first.phase !== "introduction" || !/^(thầy\s+chào|(xin\s+)?chào)/iu.test(opening) || !/thầy/iu.test(opening)
     || !/các (em|con|bạn nhỏ)/iu.test(opening) || opening.indexOf("hôm nay") <= opening.indexOf("chào"))

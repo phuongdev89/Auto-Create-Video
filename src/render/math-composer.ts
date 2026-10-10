@@ -8,12 +8,14 @@ import { fileURLToPath } from "node:url";
 import type { MathScript, MathTemplate } from "./math-schema.js";
 import { planMathScenes } from "./math-direction.js";
 import { responsiveComposition, type VideoOrientation } from "./responsive.js";
+import { approvedBackdrop } from "./approved-art.js";
+import { renderTeachingAid } from './teaching-aid.js';
 
 const templates = join(dirname(fileURLToPath(import.meta.url)), "templates");
 const require = createRequire(import.meta.url);
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 const paragraph = (s?: string, cls = "math-text") => s ? `<div class="${cls}">${esc(s)}</div>` : "";
-const formula = (s?: string, split = false) => {
+const formula = (s?: string, split = false, zoom = false) => {
   if (!s) return "";
   // Split only a single top-level equality. Keep complex aligned expressions intact.
   const parts = s.split("=");
@@ -24,16 +26,19 @@ const formula = (s?: string, split = false) => {
     && tails[0]![1].replace(/\s/g, "") === tails[1]![1].replace(/\s/g, "");
   const side = (p: string, i: number) => paired
     ? `<span class="equation-base">${renderFormula(p.slice(0, tails[i]!.index))}</span><span class="equation-operation">${renderFormula(tails[i]![1])}</span>` : renderFormula(p);
-  return `<div class="math-equation">${safe ? `<div class="equation-pair"><div class="equation-side">${side(parts[0], 0)}</div><div class="equation-equals">${renderFormula("=")}</div><div class="equation-side">${side(parts[1], 1)}</div></div>` : renderFormula(s)}</div>`;
+  const callout = paired && zoom ? `<svg class="operation-leader" aria-hidden="true"><path/></svg><div class="operation-zoom"><small>CÙNG PHÉP BIẾN ĐỔI</small>${renderFormula(tails[1]![1])}</div>` : '';
+  return `<div class="math-equation${callout ? ' has-operation-zoom' : ''}">${safe ? `<div class="equation-pair"><div class="equation-side">${side(parts[0], 0)}</div><div class="equation-equals">${renderFormula("=")}</div><div class="equation-side">${side(parts[1], 1)}</div></div>` : renderFormula(s)}${callout}</div>`;
 };
 
 function content(td: MathTemplate, concept: MathScript["visualConcept"]): string {
   switch (td.template) {
-    case "math-intro": return paragraph(td.subtitle) + '<div class="math-intro-mark">∑</div>';
+    case "math-intro": return (td.teachingAid ? renderTeachingAid(td.teachingAid) : '')
+      + paragraph(td.hookQuestion, 'math-hook-question') + paragraph(td.subtitle)
+      + (td.hookQuestion || td.teachingAid ? '' : '<div class="math-intro-mark">∑</div>');
     case "math-problem": return paragraph(td.text, "math-problem-text") + formula(td.latex);
     case "math-step": {
       const objects = td.objects ? `<div class="math-objects">${td.objects.map(group => `<div class="math-object-group" data-color="${group.color}"><div class="math-object-label">${esc(group.label)}</div><div class="math-object-tokens" role="img" aria-label="${esc(group.label)}: ${group.count}">${Array.from({ length: group.count }, () => '<span class="math-object" aria-hidden="true"></span>').join("")}</div></div>`).join("")}</div>` : "";
-      return paragraph(td.explanation) + objects + td.equations.map(x => formula(x, ["news", "detective", "neon"].includes(concept))).join("") + paragraph(td.note, "math-note");
+      return (td.teachingAid ? renderTeachingAid(td.teachingAid) : '') + paragraph(td.explanation) + objects + td.equations.map((x, i) => formula(x, ["news", "detective", "neon", "notebook", "chalkboard"].includes(concept), concept === 'detective' && i === td.equations.length - 1)).join("") + paragraph(td.note, "math-note");
     }
     case "math-answer": return formula(td.answer) + paragraph(td.explanation) + paragraph(td.takeaway, "math-note");
     case "math-closing": return paragraph(td.message);
@@ -49,7 +54,7 @@ function content(td: MathTemplate, concept: MathScript["visualConcept"]): string
           case "label": return `<text x="${s.at.x}" y="${s.at.y}" fill="${colors[s.color]}" font-size="32" text-anchor="middle">${esc(s.text)}</text>`;
         }
       }).join("");
-      return `<svg class="math-diagram" viewBox="0 0 900 500" role="img" aria-label="${esc(td.title)}">${shapes}</svg>` + paragraph(td.explanation) + formula(td.latex);
+      return (td.teachingAid ? renderTeachingAid(td.teachingAid) : `<svg class="math-diagram" viewBox="0 0 900 500" role="img" aria-label="${esc(td.title)}">${shapes}</svg>`) + paragraph(td.explanation) + formula(td.latex);
     }
   }
 }
@@ -91,6 +96,7 @@ export function composeMathHtml(args: {
     <link rel="stylesheet" href="math-assets/katex.min.css"><link rel="stylesheet" href="math-styles.css">
     <script src="math-assets/gsap.min.js"></script></head><body data-concept="${concept}"${args.previewSceneId ? ` data-preview-scene="math-${esc(args.previewSceneId)}"${args.previewMotion ? ' data-preview-motion="true"' : ""}` : ""}>
     <div id="math-stage" data-composition-id="math-video" data-width="1080" data-height="1920" data-start="0" data-duration="${cursor.toFixed(4)}">
+      ${approvedBackdrop(concept)}
       <header class="math-brand"><span class="math-logo">∑</span><div>${esc(script.metadata.channel)}<small>GIẢI TOÁN TỪNG BƯỚC</small></div></header>
       ${args.previewSceneId ? "" : `<audio id="math-voice" class="clip" data-start="0" data-duration="${audioDuration.toFixed(4)}" data-track-index="0" src="${esc(args.audioRelPath)}"></audio>`}
       ${scenes}
@@ -106,6 +112,8 @@ export async function copyMathAssets(outputDir: string): Promise<void> {
   const katexDir = dirname(require.resolve("katex/dist/katex.min.css"));
   await cp(join(katexDir, "katex.min.css"), join(assets, "katex.min.css"));
   await cp(join(katexDir, "fonts"), join(assets, "fonts"), { recursive: true });
+  await cp(join(templates, '../../../assets/fonts/lesson-regular.ttf'), join(assets, 'fonts/lesson-regular.ttf'));
+  await cp(join(templates, '../../../assets/fonts/lesson-bold.ttf'), join(assets, 'fonts/lesson-bold.ttf'));
   await cp(require.resolve("gsap/dist/gsap.min.js"), join(assets, "gsap.min.js"));
   await cp(join(templates, "math-styles.css"), join(outputDir, "math-styles.css"));
 }

@@ -2,6 +2,8 @@
 
 ## Workflow chính: giải toán
 
+- Nếu đầu vào chưa nêu lớp cụ thể, agent phân tích kiến thức cần dùng, đưa khoảng lớp phù hợp cùng lớp khuyến nghị và lý do ngắn; hỏi bằng lựa chọn bấm từng lớp và chờ người dùng chọn trước khi giải. Có thể gộp với câu hỏi cách giải. Lưu lựa chọn vào `problem.level` và `output/<session>/grade-selection.json`; tuân thủ mục "Xác định lớp trước khi giải" trong workflow. Không tự dùng lớp suy đoán làm lớp đã xác nhận.
+
 - Ưu tiên `/create-math-video` cho mọi cấp độ. Đọc [workflow](docs/math-video-workflow.md).
 - Dùng kịch bản version `2.0`, giải và kiểm chứng trước khi dựng video.
 - Tuân thủ [quy tắc kiểm chứng toán](docs/math-verification-rules.md). Lưu lời giải đầy đủ vào `solution.md`, chạy `--audit` qua `AUDIT_AI_*`; chỉ tiếp tục khi báo cáo nội bộ đạt `pass`. Không công bố `solution.md` hoặc `verification.*` cho học sinh/người xem video ở chế độ hướng dẫn.

@@ -17,9 +17,10 @@ kiểm tra tính đúng của toán học.
 
 Xác định từ đề và yêu cầu: trình độ dự kiến, kiến thức nền cần dùng, mục tiêu
 học tập và một chỗ người học có thể gặp khó khăn. Nếu chưa biết lớp/trình độ,
-dùng cách giải ít kiến thức tiên quyết nhất phù hợp với đề; chỉ hỏi thêm khi
-thông tin đó làm thay đổi phương pháp. Không khẳng định bài thuộc chương trình
-lớp cụ thể khi chưa có căn cứ.
+phân tích kiến thức tiên quyết, đề xuất khoảng lớp và lớp khuyến nghị rồi hỏi
+người dùng chọn trước khi giải, theo mục "Xác định lớp trước khi giải" trong
+workflow. Điều chỉnh phương pháp theo lớp đã xác nhận. Không khẳng định bài
+thuộc chương trình lớp cụ thể chỉ từ suy đoán.
 
 ## Nguyên tắc trình bày
 
@@ -111,6 +112,18 @@ gợi ý tiếp, có thể nhắc "trừ năm ở cả hai vế" hoặc "chia c�
 x"; không tính hộ toàn bộ bước còn lại.
 
 ## Rà soát trước khi trả bài hoặc gọi TTS
+
+### Minh họa đồ vật và thao tác
+
+- Minh họa xuất hiện ngay khi lời giảng bắt đầu dùng đến hình/đồ vật, từ cảnh chiến lược hoặc bước giải đầu tiên; không đợi phần xét trường hợp hay kết luận. Mốc thời gian phụ thuộc audio của từng bài, không cố định ở giây bốn mươi mốt.
+- Với bài cần minh họa, khai báo `problem.requiresIllustration: true`. Đánh dấu `needsIllustration: true` cho từng cảnh giải thích quan hệ không gian, đếm đồ vật hoặc thao tác. Schema yêu cầu hình trong cảnh tư duy đầu tiên và trong từng cảnh đã đánh dấu; hình ở cảnh sau không thay thế hình ở cảnh đang giảng.
+- Lập cue theo từng ý: hiện vật ban đầu → tô cạnh/nhóm đang được nói tới → cắt/tách theo lời đọc → giữ trạng thái kết quả để quan sát. Dùng lại icon và vị trí nhận diện giữa các cảnh; không dùng nhãn chữ hoặc công thức thay cho minh họa cần thiết. Kiểm tra cue bằng audio thực tế trước TTS/render cuối, không xem validate là bằng chứng đồng bộ.
+
+- Bài có đồ vật cụ thể (sticker, cây, cốc, quả...) cần icon/hình nhận diện đúng với đề; tên chữ chỉ làm nhãn bổ sung.
+- Khi lời giảng nói cắt, tách hoặc lấy ra, minh họa đường cắt rồi di chuyển phần được lấy. Phần phải dính liền cần di chuyển đồng thời cùng khoảng dịch chuyển, không tách từng icon.
+- Dùng `templateData.teachingAid` trong `math-step` hoặc `math-diagram`: icon bằng các node `path`, đường cắt dùng `drawAt`/`drawDuration`, các node thuộc cùng mảnh dùng cùng `move: {at,duration,x,y}`. Timing là tỷ lệ thời lượng cảnh, phải khớp lời đọc thực tế.
+- Không suy diễn đường cắt hay đáp án từ tên đồ vật. Hình học và diễn hoạt do tác giả khai báo, nằm trong kịch bản được audit; kiểm tra frame trước/trong/sau thao tác cho cả hai tỷ lệ.
+
 
 - Người học có đủ kiến thức nền để theo cách giải đã chọn không?
 - Các bước quan trọng có lý do và điều kiện đúng, thuật ngữ/ký hiệu nhất quán không?

@@ -6,6 +6,28 @@ import { composeHtml } from "./html-composer.js";
 const load = (file = "algebra") => JSON.parse(readFileSync(`examples/math/${file}.json`, "utf8"));
 
 describe("math lesson contract", () => {
+  it("rejects illustrations deferred beyond the first reasoning scene", () => {
+    const s = load(); s.problem.requiresIllustration = true;
+    expect(() => MathScriptSchema.parse(s)).toThrow(/first strategy or solution/);
+    const i = s.scenes.findIndex((scene: {phase:string}) => ['strategy','solution'].includes(scene.phase));
+    s.scenes[i].templateData.teachingAid = {description:'Nhóm đồ vật đang xét',nodes:[{kind:'path',path:'M10 10H80V80H10Z'}]};
+    expect(() => MathScriptSchema.parse(s)).not.toThrow();
+    s.scenes[i+1].needsIllustration = true;
+    expect(() => MathScriptSchema.parse(s)).toThrow(/same scene/);
+  });
+  it("requires declared hook questions to be spoken and renders them in the opening", () => {
+    const s = load();
+    const question = 'Các em tìm được số còn thiếu không?';
+    s.scenes[0].templateData.hookQuestion = question;
+    expect(() => MathScriptSchema.parse(s)).toThrow(/spoken verbatim/);
+    s.scenes[0].voiceText += ' ' + question;
+    const script = MathScriptSchema.parse(s);
+    const html = composeHtml({script,sceneAudio:script.scenes.map(scene=>({id:scene.id,durationSec:10})),gapSec:.3,audioRelPath:'voice.mp3',bgImageRelPath:null});
+    expect(html).toContain('class="math-hook-question"');
+    expect(html).toContain(question);
+    s.scenes[0].templateData.hookQuestion = 'Câu hỏi thiếu dấu';
+    expect(() => MathScriptSchema.parse(s)).toThrow(/opening hook question/);
+  });
   it.each(["algebra", "algebra-guided", "geometry-english", "calculus"])("accepts verified example %s", file => {
     expect(ScriptSchema.parse(load(file)).version).toBe("2.0");
   });

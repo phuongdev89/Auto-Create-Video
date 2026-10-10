@@ -55,6 +55,22 @@ Ví dụ tách lời đọc và công thức hiển thị:
 
 ## Trình tự mở đầu, đọc đề và kết thúc (bắt buộc)
 
+### Hook bằng thử thách cụ thể
+
+Kịch bản video mới phải mở bằng lời chào ngắn, nói nhiệm vụ hôm nay dưới dạng
+thử thách của chính bài toán, nhắc điều kiện quan trọng và hỏi một câu khiến
+người học muốn thử. Không dùng lời giới thiệu chung như “bài toán rất thú vị”
+hoặc đọc đối tượng/lớp học thay cho hook. Không tiết lộ đáp án hay bước giải.
+Đề tiếng Anh vẫn thông báo đọc đề rồi đọc nguyên văn và dịch đầy đủ trước khi giải.
+
+Khai báo câu hỏi trong `math-intro.hookQuestion`, đọc nguyên câu trong `voiceText`
+(viết số bằng chữ, kết thúc bằng dấu hỏi). Composer hiển thị câu hỏi nổi bật;
+schema kiểm tra câu hỏi có trong lời đọc. Dùng `math-intro.teachingAid` cho icon
+hoặc hình đúng đề ngay đầu video. Hiệu ứng phải giữ điều kiện bài toán;
+ở chế độ guided không minh họa thao tác làm lộ bước quyết định hoặc đáp án.
+Các kịch bản cũ thiếu hookQuestion vẫn được đọc để tương thích.
+
+
 - Mọi video: chào → nói hôm nay học/làm gì → nội dung → lời chúc. Ví dụ:
   "Thầy chào các em. Hôm nay thầy cùng các em tìm hiểu cách giải phương trình."
 - Đề tiếng Anh phải theo đúng thứ tự:
