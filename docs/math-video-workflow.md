@@ -27,7 +27,7 @@ khi có script hoặc lời giải:
 npm run progress -- output/<session>
 ```
 
-Mở liên kết được in ra; liên kết cũng lưu trong `progress.url`. Server loopback
+Ngay sau khi lệnh khởi động, agent phải gửi nguyên liên kết Progress trong tin nhắn cập nhật cho người tạo và mở liên kết đó. Liên kết cũng lưu trong `progress.url`. Server loopback
 chạy tới khi người tạo dừng bằng Ctrl+C, không tự tắt khi pipeline xong/lỗi.
 Liên kết có khóa riêng và cookie chỉ đọc; không chia sẻ với học sinh vì trang
 hiển thị toàn bộ `solution.md` và `verification.md`, kể cả guided. Concept

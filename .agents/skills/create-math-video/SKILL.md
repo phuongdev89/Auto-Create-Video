@@ -9,7 +9,7 @@ Use for math requests, solution videos and animated lessons in this project.
 
 Before solving or drafting, follow "Xác định lớp trước khi giải" and "Chọn cách giải" in the shared workflow. If grade is missing or only a school stage is supplied, analyze prerequisites and recommend a grade with a short reason. Show clickable individual grade choices across the plausible range, marking the recommended grade. Wait for the user's actual grade choice and solution mode before solving. These two questions may be bundled. Save grade-selection.json in the session and the selected grade in problem.level; never replace the user choice with the inferred recommendation. Reuse a confirmed grade when continuing the same problem.
 At task start, launch `npm run progress -- output/<session>` in a persistent
-terminal before script.json exists, open the private creator URL, and keep it
+terminal before script.json exists, immediately report the printed private creator URL in the next user-facing update, open that URL, and keep it
 running through completion/failure. Follow "Progress realtime xuyên suốt task"
 in the shared workflow. Update receive/wait/solve stages with the progress CLI;
 audit/concepts/pipeline/rerender update production stages automatically. Use
