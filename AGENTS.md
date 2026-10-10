@@ -1,0 +1,41 @@
+# Quy Tắc Cho Agent (AGENTS.md)
+
+## Workflow chính: giải toán
+
+- Ưu tiên `/create-math-video` cho mọi cấp độ. Đọc [workflow](docs/math-video-workflow.md).
+- Dùng kịch bản version `2.0`, giải và kiểm chứng trước khi dựng video.
+- Không ép bài giảng vào một phút/tám cảnh. Giữ đầy đủ đề, giả thiết và bước kiểm tra.
+- Workflow tin tức version `1.0` giữ cho tương thích khi người dùng cần.
+
+## Persona, Voice & Personal Pronouns
+
+- **Voice**: The voice model is permanently set to a **male voice** (`n_hanoi_male_sizonguyen_education_vc` or other male TTS voices).
+- **Personal Pronoun Rule**:
+  - **ALWAYS** use the personal pronoun **"thầy"** (teacher - male) when addressing students/audience or explaining solutions.
+  - **NEVER** use **"cô"** under any circumstances in generated scripts, `voiceText`, subtitles, or UI cards.
+  - Call students/viewers: *"các bạn nhỏ"*, *"các em"*, or *"các con"*.
+
+## TTS Scripting Rules
+- Spell out all numbers and mathematical signs in Vietnamese words within `voiceText` (e.g. *"hai mươi tư"*, *"cộng"*, *"trừ"*, *"chia"*).
+- Keep `voiceText` free of emojis, mathematical symbols (`+ - = %`), and URLs.
+- Render on-screen visuals and subtitles with matching terminology (**"thầy"**, never **"cô"**).
+- Kết thúc mỗi câu bằng dấu chấm hoặc dấu chấm hỏi để ngắt nghỉ tự nhiên.
+- Text hiển thị (`templateData`, HTML/SVG, phụ đề) có thể dùng chữ số, ký hiệu và icon; lời đọc tiếng Việt vẫn viết bằng chữ.
+- Video mặc định theo tỷ lệ 9:16, 1080 × 1920 cho TikTok/Shorts/Reels.
+- Dùng `VBEE_VOICE_CODE_VI` cho lời tiếng Việt và `VBEE_VOICE_CODE_EN=am_echo` cho nguyên văn tiếng Anh. Hai giọng đều dùng persona nam; tiếng Anh đọc ở `0.9×`.
+
+## Tệp dùng một lần khi tạo video
+
+- Mỗi lượt chạy task tạo video dùng một thư mục riêng `output/<session>/` trong dự án; `<session>` là mã lượt chạy duy nhất (ví dụ `YYYYMMDD-HHmmss-<slug>`). Tiếp tục cùng lượt chạy thì dùng lại session đó.
+- Nếu cần code ra tệp script để sử dụng, phải tạo và chạy script trong `output/<session>/scripts/`.
+- Toàn bộ tệp dùng một lần phải nằm trong cùng `output/<session>/`: script hỗ trợ, HTML/composition, JSON/cấu hình, bản sao đầu vào, tài nguyên tải về cho task, tệp tạm, cache của script, log, preview và audio/video trung gian. Có thể tạo thư mục con bên trong session.
+- Chỉ định rõ đường dẫn đầu ra, tệp tạm và cache của script vào session; đọc tài nguyên dùng chung từ đường dẫn dự án. Không đặt tệp dùng một lần ở thư mục gốc, `scripts/` dùng chung, `src/` hoặc thư mục skill.
+- Giữ nguyên tệp người dùng và tài nguyên dùng chung đã có. Chỉ thêm/sửa mã tái sử dụng ngoài session khi task yêu cầu thay đổi mã dự án để tái sử dụng.
+
+## Mở đầu, đọc đề tiếng Anh và lời chúc cuối video
+
+Bắt buộc đọc và tuân thủ [quy tắc lời thoại chung](docs/voice-text-rules.md), mục "Trình tự mở đầu, đọc đề và kết thúc".
+
+- Mọi video: chào hỏi → nói hôm nay làm gì → nội dung → kết thúc bằng lời chúc.
+- Nếu đề bằng tiếng Anh: chào hỏi → nói hôm nay làm gì → thông báo đọc đề tiếng Anh → đọc nguyên văn đề bằng Vbee với `VBEE_VOICE_CODE_EN` ở tốc độ `0.9×` → đọc bản dịch tiếng Việt → bắt đầu vào bài.
+- Đoạn đề tiếng Anh giữ nguyên văn, tách khỏi `voiceText` tiếng Việt; quy tắc viết số và ký hiệu bằng chữ tiếng Việt không áp dụng cho đề gốc tiếng Anh.

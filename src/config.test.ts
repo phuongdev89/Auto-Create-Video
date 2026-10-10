@@ -13,6 +13,8 @@ const ENV_KEYS = [
   "ELEVENLABS_MODEL_ID",
   "ELEVENLABS_ENDPOINT",
   "TTS_CONCURRENCY",
+  "VBEE_APP_ID", "VBEE_ACCESS_TOKEN", "VBEE_CALLBACK_URL", "VBEE_VOICE_CODE_VI", "VBEE_VOICE_CODE_EN",
+  "VBEE_SPEED", "VBEE_ENDPOINT", "VBEE_POLL_INTERVAL_MS", "VBEE_POLL_TIMEOUT_MS",
 ];
 
 describe("loadConfig", () => {
@@ -82,6 +84,55 @@ describe("loadConfig", () => {
       process.env.ELEVENLABS_MODEL_ID = "eleven_turbo_v2_5";
       const cfg = loadConfig();
       expect(cfg.elevenlabsModelId).toBe("eleven_turbo_v2_5");
+    });
+  });
+
+  describe("Vbee provider", () => {
+    beforeEach(() => {
+      process.env.TTS_PROVIDER = "vbee";
+      process.env.VBEE_APP_ID = "app-test";
+      process.env.VBEE_ACCESS_TOKEN = "token-test";
+      process.env.VBEE_CALLBACK_URL = "https://example.com/callback";
+    });
+
+    it("loads credentials and defaults without other provider keys", () => {
+      const cfg = loadConfig();
+      expect(cfg.ttsProvider).toBe("vbee");
+      expect(cfg.vbeeAppId).toBe("app-test");
+      expect(cfg.vbeeAccessToken).toBe("token-test");
+      expect(cfg.vbeeVoiceCodeVi).toBe("n_hanoi_male_sizonguyen_education_vc");
+      expect(cfg.vbeeVoiceCodeEn).toBe("am_echo");
+      expect(cfg.vbeeSpeed).toBe(1);
+      expect(cfg.vbeeEndpoint).toBe("https://api.vbee.vn/v1");
+      expect(cfg.vbeePollTimeoutMs).toBe(120000);
+    });
+
+    it.each(["VBEE_APP_ID", "VBEE_ACCESS_TOKEN", "VBEE_CALLBACK_URL"])("requires %s", (key) => {
+      delete process.env[key];
+      expect(() => loadConfig()).toThrow(key);
+    });
+
+    it("supports custom voice, speed and polling", () => {
+      process.env.VBEE_VOICE_CODE_VI = "custom-voice";
+      process.env.VBEE_VOICE_CODE_EN = "custom-english";
+      process.env.VBEE_SPEED = "0.25";
+      process.env.VBEE_POLL_INTERVAL_MS = "100";
+      expect(loadConfig()).toMatchObject({ vbeeVoiceCodeVi: "custom-voice", vbeeVoiceCodeEn: "custom-english", vbeeSpeed: 0.25, vbeePollIntervalMs: 100 });
+    });
+
+    it.each(["NaN", "0", "2", ""])("rejects speed %s", (speed) => {
+      process.env.VBEE_SPEED = speed;
+      expect(() => loadConfig()).toThrow(/VBEE_SPEED/);
+    });
+
+    it.each(["0", "-1", "1.5", "bad"])("rejects invalid polling interval %s", (value) => {
+      process.env.VBEE_POLL_INTERVAL_MS = value;
+      expect(() => loadConfig()).toThrow(/VBEE_POLL_INTERVAL_MS/);
+    });
+
+    it("rejects a non-HTTP callback", () => {
+      process.env.VBEE_CALLBACK_URL = "file:///tmp/callback";
+      expect(() => loadConfig()).toThrow(/VBEE_CALLBACK_URL/);
     });
   });
 

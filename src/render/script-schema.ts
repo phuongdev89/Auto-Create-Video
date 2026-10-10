@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MathScriptSchema } from "./math-schema.js";
 
 // ── Template data shapes (discriminated by template field) ─────────────────
 
@@ -94,7 +95,7 @@ const Scene = z.object({
 
 // ── Root schema ────────────────────────────────────────────────────────────
 
-export const ScriptSchema = z.object({
+export const LegacyScriptSchema = z.object({
   version: z.literal("1.0"),
   metadata: z.object({
     title: z.string().min(1),
@@ -106,10 +107,11 @@ export const ScriptSchema = z.object({
     channel: z.string().min(1),
   }),
   voice: z.object({
-    provider: z.literal("lucylab"),
+    provider: z.enum(["lucylab", "elevenlabs", "vbee"]),
     voiceId: z.string().min(1),
-    speed: z.number().min(0.5).max(2.0),
-  }),
+    speed: z.number().min(0.25).max(2.0),
+  }).refine((voice) => voice.provider === "vbee" ? voice.speed <= 1.9 : voice.speed >= 0.5,
+    { message: "voice speed must be 0.25–1.9 for Vbee or 0.5–2.0 for other providers", path: ["speed"] }),
   scenes: z
     .array(Scene)
     .min(5)
@@ -124,4 +126,7 @@ export const ScriptSchema = z.object({
     ),
 });
 
+// Version one remains readable for existing output folders. Version two is the primary math workflow.
+export const ScriptSchema = z.union([LegacyScriptSchema, MathScriptSchema]);
+export type LegacyScript = z.infer<typeof LegacyScriptSchema>;
 export type Script = z.infer<typeof ScriptSchema>;

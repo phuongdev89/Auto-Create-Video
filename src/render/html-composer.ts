@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Script, TemplateDataType } from "./script-schema.js";
+import type { Script, LegacyScript, TemplateDataType } from "./script-schema.js";
+import { composeMathHtml } from "./math-composer.js";
 import type { TiktokConfig } from "../config.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -37,6 +38,7 @@ export interface ComposeArgs {
 }
 
 export function composeHtml(args: ComposeArgs): string {
+  if (args.script.version === "2.0") return composeMathHtml({ ...args, script: args.script });
   const { script, sceneAudio, gapSec, bgImageRelPath, audioRelPath } = args;
   const tiktok = args.tiktok ?? DEFAULT_TIKTOK;
   const tiktokAvatar = args.tiktokAvatarRelPath ?? "tiktok-avatar.jpg";
@@ -107,7 +109,7 @@ ${GRAIN_OVERLAY_HTML}`.trim();
 
 // ── SCENE DISPATCH ─────────────────────────────────────────────────────────
 function renderScene(
-  scene: Script["scenes"][number],
+  scene: LegacyScript["scenes"][number],
   start: number,
   duration: number,
   bgImageRelPath: string | null,
@@ -285,7 +287,7 @@ function renderTiktokCard(tiktok: TiktokConfig, avatarRelPath: string): string {
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 function buildScene(
-  scene: Script["scenes"][number],
+  scene: LegacyScript["scenes"][number],
   start: number,
   duration: number,
   layoutName: string,

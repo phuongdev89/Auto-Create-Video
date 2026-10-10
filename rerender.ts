@@ -8,11 +8,13 @@ import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ScriptSchema } from "./src/render/script-schema.js";
 import { loadConfig } from "./src/config.js";
-import { getDurationSec, concatWithSilence, mixSfxOntoVoice, type SfxMixSpec } from "./src/assets/audio-tools.js";
+import { getDurationSec, getDecodedDurationSec, concatWithSilence, mixSfxOntoVoice, type SfxMixSpec } from "./src/assets/audio-tools.js";
 import { indexSfxLibrary, pickSfxForScene, defaultPlayback } from "./src/assets/sfx-selector.js";
 import { existsSync } from "node:fs";
 import { composeHtml } from "./src/render/html-composer.js";
 import { renderWithHyperframes } from "./src/render/hyperframes-runner.js";
+import { copyMathAssets } from "./src/render/math-composer.js";
+import { mathAudioFingerprint } from "./src/tts/audio-cache.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TPL_DIR = join(__dirname, "src", "render", "templates");
@@ -37,7 +39,9 @@ async function main() {
 
   // Load script.json
   const raw = JSON.parse(await readFile(join(outputDir, "script.json"), "utf8"));
-  if (raw.voice?.voiceId === "${VIETNAMESE_VOICEID}" || raw.voice?.voiceId === "${VOICE_ID}") {
+  if (raw.voice && cfg.ttsProvider === "vbee") {
+    raw.voice = { ...raw.voice, provider: "vbee", voiceId: cfg.vbeeVoiceCodeVi, speed: cfg.vbeeSpeed };
+  } else if (raw.voice?.voiceId === "${VIETNAMESE_VOICEID}" || raw.voice?.voiceId === "${VOICE_ID}") {
     raw.voice.voiceId = cfg.ttsProvider === "lucylab" ? cfg.lucylabVoiceId! : cfg.elevenlabsVoiceId!;
   }
   const script = ScriptSchema.parse(raw);
@@ -46,7 +50,12 @@ async function main() {
   const sceneAudio = await Promise.all(
     script.scenes.map(async (s) => {
       const path = join(outputDir, "voice", `scene-${s.id}.mp3`);
-      const dur = await getDurationSec(path);
+      if (script.version === "2.0") {
+        const expected = mathAudioFingerprint(s as typeof script.scenes[number], cfg);
+        const cache = JSON.parse(await readFile(path + ".cache.json", "utf8"));
+        if (cache.fingerprint !== expected) throw new Error(`Scene ${s.id} narration/voice changed. Run pipeline to regenerate audio before rerendering.`);
+      }
+      const dur = await (script.version === "2.0" ? getDecodedDurationSec : getDurationSec)(path);
       console.log(`  scene ${s.id}: ${dur.toFixed(2)}s`);
       return { id: s.id, path, durationSec: dur };
     })
@@ -78,6 +87,7 @@ async function main() {
       }
       continue;
     }
+    if (script.version === "2.0") continue;
     const picked = pickSfxForScene({
       voiceText: scene.voiceText,
       templateName: scene.templateData.template,
@@ -109,14 +119,14 @@ async function main() {
     const p = join(__dirname, "assets", `avatar.${ext}`);
     if (existsSync(p)) { bundledAvatar = p; break; }
   }
-  if (!bundledAvatar) {
+  if (!bundledAvatar && script.version !== "2.0") {
     throw new Error("No bundled avatar found. Place an image at assets/avatar.{jpg,png,webp}");
   }
-  const ttAvatarExt = bundledAvatar.split(".").pop()!.toLowerCase();
+  const ttAvatarExt = bundledAvatar?.split(".").pop()!.toLowerCase() ?? "png";
   const ttAvatarFile = `tiktok-avatar.${ttAvatarExt}`;
   const ttAvatarOut = join(outputDir, ttAvatarFile);
   // Always re-copy in case bundled was updated
-  await copyFile(bundledAvatar, ttAvatarOut);
+  if (bundledAvatar && script.version !== "2.0") await copyFile(bundledAvatar, ttAvatarOut);
 
   // Compose HTML
   const html = composeHtml({
@@ -138,10 +148,11 @@ async function main() {
   }, null, 2));
   await copyFile(join(TPL_DIR, "styles.css"),    join(outputDir, "styles.css"));
   await copyFile(join(TPL_DIR, "animations.js"), join(outputDir, "animations.js"));
+  if (script.version === "2.0") await copyMathAssets(outputDir);
 
   // Render
   const videoPath = join(outputDir, "video.mp4");
-  await renderWithHyperframes({ compositionDir: outputDir, outputPath: videoPath });
+  await renderWithHyperframes({ compositionDir: outputDir, outputPath: videoPath, check: script.version === "2.0" });
   console.log(`\nDone: ${videoPath}`);
 }
 

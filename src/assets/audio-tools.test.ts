@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { getDurationSec, concatWithSilence } from "./audio-tools.js";
+import { getDurationSec, getDecodedDurationSec, concatWithSilence } from "./audio-tools.js";
 
 let tmp: string;
 beforeEach(() => { tmp = mkdtempSync(join(tmpdir(), "aud-")); });
@@ -17,6 +17,13 @@ describe("getDurationSec", () => {
 });
 
 describe("concatWithSilence", () => {
+  it("keeps decoded scene timing aligned after concatenation", async () => {
+    const paths = ["tests/fixtures/sample-audio-1.mp3", "tests/fixtures/sample-audio-2.mp3"];
+    const expected = (await getDecodedDurationSec(paths[0])) + (await getDecodedDurationSec(paths[1])) + 0.3;
+    const out = join(tmp, "decoded.mp3");
+    await concatWithSilence(paths, 0.3, out);
+    expect(Math.abs(await getDecodedDurationSec(out) - expected)).toBeLessThan(0.01);
+  });
   it("concatenates two mp3s with 0.3s gap", async () => {
     const out = join(tmp, "voice.mp3");
     await concatWithSilence(

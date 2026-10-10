@@ -1,0 +1,14 @@
+{
+  "version":"2.0",
+  "metadata":{"title":"Tính tích phân của x bình phương","channel":"Học Toán cùng thầy"},
+  "problem":{"original":"Tính tích phân xác định của x² từ 0 đến 1.","language":"vi","answer":"I = \\frac{1}{3}","level":"THPT","topic":"Tích phân"},
+  "voice":{"provider":"lucylab","voiceId":"${VOICE_ID}","gender":"male","speed":1},
+  "scenes":[
+    {"id":"opening","type":"hook","phase":"introduction","voiceText":"Thầy chào các em. Hôm nay thầy cùng các em tính một tích phân xác định và kiểm tra nguyên hàm.","templateData":{"template":"math-intro","title":"Tích phân từng bước","subtitle":"Nguyên hàm · Thay cận · Kiểm tra"}},
+    {"id":"problem","type":"body","phase":"problem","voiceText":"Đề bài yêu cầu tính tích phân của x bình phương từ không đến một.","templateData":{"template":"math-problem","text":"Tính tích phân xác định của x² từ 0 đến 1.","latex":"I = \\int_0^1 x^2\\,dx"}},
+    {"id":"solution","type":"body","phase":"solution","voiceText":"Một nguyên hàm của x bình phương là x mũ ba chia ba. Thay cận trên là một và cận dưới là không, ta được một phần ba.","templateData":{"template":"math-step","title":"Tìm nguyên hàm và thay cận","equations":["F(x) = \\frac{x^3}{3}","I = F(1)-F(0) = \\frac{1}{3}-0 = \\frac{1}{3}"]}},
+    {"id":"check","type":"body","phase":"check","voiceText":"Thầy lấy đạo hàm của x mũ ba chia ba. Kết quả là x bình phương, đúng với hàm dưới dấu tích phân.","templateData":{"template":"math-step","title":"Kiểm tra nguyên hàm","equations":["F'(x)=\\left(\\frac{x^3}{3}\\right)'=x^2"]}},
+    {"id":"answer","type":"body","phase":"answer","voiceText":"Vậy tích phân bằng một phần ba.","templateData":{"template":"math-answer","answer":"I = \\frac{1}{3}","takeaway":"Tìm nguyên hàm · Thay cận trên trừ cận dưới"}},
+    {"id":"closing","type":"outro","phase":"closing","voiceText":"Thầy chúc các em học tốt và hiểu rõ từng bước giải toán.","templateData":{"template":"math-closing","message":"Thầy chúc các em học tốt và hiểu rõ từng bước."}}
+  ]
+}

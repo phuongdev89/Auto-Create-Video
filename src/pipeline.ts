@@ -4,14 +4,16 @@ import { fileURLToPath } from "node:url";
 import pLimit from "p-limit";
 import { ScriptSchema, type Script } from "./render/script-schema.js";
 import { loadConfig } from "./config.js";
-import { createTtsClient } from "./tts/tts-client.js";
+import { createTtsClient, createEnglishTtsClient } from "./tts/tts-client.js";
 import { fetchImage } from "./assets/image-fetcher.js";
-import { getDurationSec, concatWithSilence, mixSfxOntoVoice, type SfxMixSpec } from "./assets/audio-tools.js";
+import { getDurationSec, getDecodedDurationSec, concatWithSilence, mixSfxOntoVoice, type SfxMixSpec } from "./assets/audio-tools.js";
 import { indexSfxLibrary, pickSfxForScene, defaultPlayback } from "./assets/sfx-selector.js";
 import { existsSync } from "node:fs";
 import { composeHtml } from "./render/html-composer.js";
 import { renderWithHyperframes } from "./render/hyperframes-runner.js";
 import { log } from "./utils/logger.js";
+import { copyMathAssets } from "./render/math-composer.js";
+import { mathAudioFingerprint } from "./tts/audio-cache.js";
 
 const TOTAL_STEPS = 8;
 const DURATION_MIN_SEC = 48;
@@ -40,7 +42,7 @@ const HYPERFRAMES_CONFIG = {
   },
 };
 
-export async function runPipeline(scriptPath: string): Promise<void> {
+export async function runPipeline(scriptPath: string, options: { render?: boolean } = {}): Promise<void> {
   const cfg = loadConfig();
   const outputDir = dirname(scriptPath);
   log.info(`Output directory: ${outputDir}`);
@@ -48,21 +50,31 @@ export async function runPipeline(scriptPath: string): Promise<void> {
   // STEP 1
   log.step(1, TOTAL_STEPS, `Load env + validate script.json (TTS provider: ${cfg.ttsProvider})`);
   const raw = JSON.parse(await readFile(scriptPath, "utf8"));
-  // Substitute env placeholder before validation (works for both providers)
-  if (raw.voice?.voiceId === "${VIETNAMESE_VOICEID}" || raw.voice?.voiceId === "${VOICE_ID}") {
+  // Environment selects the active TTS provider; existing scripts remain reusable.
+  if (raw.voice && cfg.ttsProvider === "vbee") {
+    raw.voice = { ...raw.voice, provider: "vbee", voiceId: cfg.vbeeVoiceCodeVi, speed: cfg.vbeeSpeed };
+  } else if (raw.voice?.voiceId === "${VIETNAMESE_VOICEID}" || raw.voice?.voiceId === "${VOICE_ID}") {
     raw.voice.voiceId = cfg.ttsProvider === "lucylab" ? cfg.lucylabVoiceId! : cfg.elevenlabsVoiceId!;
   }
   const script: Script = ScriptSchema.parse(raw);
+  const isMath = script.version === "2.0";
+  const measureDuration = isMath ? getDecodedDurationSec : getDurationSec;
+  if (isMath) {
+    const activeVoice = cfg.ttsProvider === "vbee" ? cfg.vbeeVoiceCodeVi : cfg.ttsProvider === "lucylab" ? cfg.lucylabVoiceId : cfg.elevenlabsVoiceId;
+    if (/female/i.test(activeVoice ?? "")) throw new Error("Math lessons require a male TTS voice. Configure the provider's male voice ID.");
+  }
+  // Validate English Vbee settings before any Vietnamese provider calls.
+  const englishClient = isMath && script.problem.language === "en" ? createEnglishTtsClient(cfg) : undefined;
 
   // STEP 2
   log.step(2, TOTAL_STEPS, "Write script.txt for CapCut");
-  const fullText = script.scenes.map((s) => s.voiceText).join("\n\n");
+  const fullText = script.scenes.map((s) => "englishText" in s && s.englishText ? s.englishText : s.voiceText).join("\n\n");
   await writeFile(join(outputDir, "script.txt"), fullText);
 
   // STEP 3 + 4 in parallel
-  log.step(3, TOTAL_STEPS, "Fetch og:image (parallel) + Step 4 TTS");
+  log.step(3, TOTAL_STEPS, isMath ? "Prepare math lesson + per-scene narration" : "Fetch og:image (parallel) + Step 4 TTS");
   const imgPath = join(outputDir, "images", "bg.jpg");
-  const imgPromise = fetchImage(script.metadata.source.image, imgPath);
+  const imgPromise = fetchImage(isMath ? null : script.metadata.source.image, imgPath);
 
   // STEP 4
   const ttsClient = createTtsClient(cfg);
@@ -76,19 +88,27 @@ export async function runPipeline(scriptPath: string): Promise<void> {
     limit(async () => {
       const out = join(voiceDir, `scene-${scene.id}.mp3`);
       const srtOut = join(voiceDir, `scene-${scene.id}.srt`);
+      const fingerprint = script.version === "2.0" ? mathAudioFingerprint(scene as typeof script.scenes[number], cfg) : undefined;
+      const cachePath = out + ".cache.json";
+      let cached = false;
+      if (fingerprint && existsSync(cachePath)) {
+        try { cached = JSON.parse(await readFile(cachePath, "utf8")).fingerprint === fingerprint; } catch { /* regenerate incomplete cache */ }
+      }
 
       // IDEMPOTENT: skip TTS if voice file already exists.
       // To force re-TTS for a scene, delete its mp3 file before running.
       // This saves API quota when only some scenes' voiceText changed.
-      if (existsSync(out)) {
-        const dur = await getDurationSec(out);
+      if (existsSync(out) && (!isMath || cached)) {
+        const dur = await measureDuration(out);
         log.info(`  scene ${scene.id}: REUSE existing mp3 (${dur.toFixed(2)}s) — delete to force re-TTS`);
         return { id: scene.id, path: out, durationSec: dur };
       }
 
       log.info(`  TTS scene ${scene.id} (${scene.voiceText.length} chars)...`);
-      await ttsClient.generate(scene.voiceText, out, srtOut);
-      const dur = await getDurationSec(out);
+      if ("englishText" in scene && scene.englishText) await englishClient!.generate(scene.englishText, out, srtOut);
+      else await ttsClient.generate(scene.voiceText, out, srtOut);
+      if (fingerprint) await writeFile(cachePath, JSON.stringify({ fingerprint }));
+      const dur = await measureDuration(out);
       log.info(`  scene ${scene.id}: ${dur.toFixed(2)}s`);
       return { id: scene.id, path: out, durationSec: dur };
     }),
@@ -102,7 +122,7 @@ export async function runPipeline(scriptPath: string): Promise<void> {
   let bgImageRelPath: string | null = null;
   if (imgResult.success) {
     bgImageRelPath = "images/bg.jpg";
-  } else {
+  } else if (!isMath) {
     log.warn(`Background image fetch failed: ${imgResult.reason} → using gradient fallback`);
   }
 
@@ -146,6 +166,8 @@ export async function runPipeline(scriptPath: string): Promise<void> {
       continue;
     }
 
+    // Lessons stay quiet by default; opt in to SFX explicitly per scene.
+    if (isMath) continue;
     // Tier 2/3: smart selection by content + template
     const picked = pickSfxForScene({
       voiceText: scene.voiceText,
@@ -172,7 +194,7 @@ export async function runPipeline(scriptPath: string): Promise<void> {
 
   const totalAudioSec = await getDurationSec(voiceMp3);
   log.info(`  voice.mp3 total: ${totalAudioSec.toFixed(2)}s`);
-  if (totalAudioSec < DURATION_MIN_SEC || totalAudioSec > DURATION_MAX_SEC) {
+  if (!isMath && (totalAudioSec < DURATION_MIN_SEC || totalAudioSec > DURATION_MAX_SEC)) {
     log.warn(`Total duration ${totalAudioSec.toFixed(1)}s outside [${DURATION_MIN_SEC}, ${DURATION_MAX_SEC}]s tolerance — proceeding anyway`);
   }
 
@@ -189,17 +211,17 @@ export async function runPipeline(scriptPath: string): Promise<void> {
     }
     throw new Error(`No bundled avatar found. Place an image at assets/avatar.{jpg,png,webp}`);
   };
-  const bundledAvatar = findBundledAvatar();
-  const ttAvatarExt = bundledAvatar.split(".").pop()!.toLowerCase();
+  const bundledAvatar = isMath ? null : findBundledAvatar();
+  const ttAvatarExt = bundledAvatar?.split(".").pop()!.toLowerCase() ?? "png";
   const ttAvatarFile = `tiktok-avatar.${ttAvatarExt}`;
   const ttAvatarOut = join(outputDir, ttAvatarFile);
-  if (cfg.tiktok.avatarUrl) {
+  if (bundledAvatar && cfg.tiktok.avatarUrl) {
     const r = await fetchImage(cfg.tiktok.avatarUrl, ttAvatarOut);
     if (!r.success) {
       log.warn(`TikTok avatar download failed: ${r.reason} → falling back to bundled default`);
       await copyFile(bundledAvatar, ttAvatarOut);
     }
-  } else {
+  } else if (bundledAvatar) {
     await copyFile(bundledAvatar, ttAvatarOut);
   }
 
@@ -229,16 +251,17 @@ export async function runPipeline(scriptPath: string): Promise<void> {
   // Copy templates next to the index.html so relative paths resolve
   await copyFile(join(TPL_DIR, "styles.css"),    join(outputDir, "styles.css"));
   await copyFile(join(TPL_DIR, "animations.js"), join(outputDir, "animations.js"));
+  if (isMath) await copyMathAssets(outputDir);
 
   // STEP 7
   log.step(7, TOTAL_STEPS, "Render with hyperframes");
   const videoPath = join(outputDir, "video.mp4");
-  await renderWithHyperframes({ compositionDir: outputDir, outputPath: videoPath });
+  if (options.render !== false) await renderWithHyperframes({ compositionDir: outputDir, outputPath: videoPath, check: isMath });
 
   // STEP 8
   log.step(8, TOTAL_STEPS, "Done");
   console.log("\n=== Result ===");
-  console.log(`Video:  ${videoPath}`);
+  console.log(options.render === false ? `Composition: ${join(outputDir, "index.html")}` : `Video:  ${videoPath}`);
   console.log(`Audio:  ${voiceMp3}  (cho CapCut)`);
   console.log(`Script: ${join(outputDir, "script.txt")}  (cho CapCut auto-caption)`);
   console.log(`Tong thoi luong: ${totalAudioSec.toFixed(2)}s`);

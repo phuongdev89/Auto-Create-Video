@@ -1,9 +1,11 @@
 ---
 name: create-news-video
-description: Tạo video tin tức ngắn 9:16 (~60s) từ URL bài báo hoặc file .txt tiếng Việt. Trigger khi user yêu cầu tạo video tin tức, làm short news, làm bản tin video, render tin thành video, làm TikTok tin tức. Output: video.mp4 + voice.mp3 + script.txt cho CapCut.
+description: "Tạo video tin tức ngắn 9:16 (~60s) từ URL bài báo hoặc file .txt tiếng Việt. Trigger khi user yêu cầu tạo video tin tức, làm short news, làm bản tin video, render tin thành video, làm TikTok tin tức. Output: video.mp4 + voice.mp3 + script.txt cho CapCut."
 ---
 
 # Create News Video Skill
+
+Legacy news workflow. For math lessons, use create-math-video and docs/math-video-workflow.md with the version 2.0 schema; this is the primary workflow of the project.
 
 Generate a Vietnamese 9:16 motion-graphic news video from a URL or .txt file.
 
@@ -21,7 +23,7 @@ Single argument: a news article URL (starts with `http://` or `https://`) OR a p
 ### Step 2: Fetch content
 
 **URL mode:**
-- Use `WebFetch` with prompt:
+- Use `WebFetch` or the agent's available web-fetch tool with prompt:
   ```
   Trích xuất từ trang này:
   - title (string): tiêu đề bài báo
@@ -33,103 +35,44 @@ Single argument: a news article URL (starts with `http://` or `https://`) OR a p
 - If WebFetch fails (paywall, JS-rendered, 4xx) → tell user to save content to a .txt file and pass that instead. Stop.
 
 **File mode:**
-- Use `Read` to read the .txt file
+- Use `Read` or the agent's available file-reading tool to read the .txt file
 - Title = first non-empty line (strip whitespace, max 80 chars)
 - Content = remaining lines joined
 - ogImage = `null`
 - domain = `"local"`
 
-### Step 3: Create slug + output directory
+### Step 3: Create session + output directory
 
 - slug = lowercase ASCII (strip Vietnamese diacritics, đ→d), replace non-alphanumeric with `-`, trim dashes, max 40 chars
-- timestamp = current local time as `YYYYMMDD-HHmm`
-- outputDir = `output/<slug>-<timestamp>/`
-- Use Bash: `mkdir -p <outputDir>`
+- timestamp = current local time as `YYYYMMDD-HHmmss`
+- session = `<timestamp>-<slug>`; if that directory already exists, append a unique suffix for this task run. When resuming the same run, reuse its session.
+- outputDir = `output/<session>/` relative to the project root.
+- Create this directory before writing any run-specific files.
+- **All one-off files for this video task MUST stay under `<outputDir>`**, including executable helper scripts (`.py`, `.ts`, `.js`, `.ps1`, `.sh`), generated HTML/compositions, JSON/config/input copies, downloaded task assets, temporary files, logs, previews, and intermediate audio/video. Subdirectories such as `scripts/`, `assets/`, and `tmp/` inside the session are allowed.
+- When video creation requires coding a script file, write it to `<outputDir>/scripts/` and execute it from there. Set its outputs, temporary files, and caches to paths inside the same session; resolve shared project inputs from the project root explicitly.
+- Do not put one-off files in the project root, the shared `scripts/` directory, source directories, or skill folders. Reusable project code belongs in those locations only when the task explicitly calls for a reusable change.
+- Leave existing user files and shared assets in place; read them or copy needed inputs into the session.
 
 ### Step 4: Generate script.json
 
 Following the schema in `docs/superpowers/specs/2026-04-29-auto-news-video-design.md` Section 4. Key rules:
 
 **Script content (Vietnamese):**
-- Total voiceText: ~150–200 words → ~55–65s spoken at speed 1.0
-- Number of scenes: **5–8** (1 hook + 3–6 body + 1 outro)
+- Typical Vietnamese voiceText: ~150–200 words → ~55–65s spoken at speed 1.0. Mandatory greetings, English problem reading, translation, and closing wishes take priority over this target; extend duration when needed.
+- Typically **5–8** scenes (1 opening/hook + 3–6 body + 1 outro); add scenes as needed for the complete English problem and Vietnamese translation.
 - Each scene voiceText is 1-3 short sentences, văn nói (spoken style, not formal)
 - No emoji, no markdown in voiceText
+- **Persona & Đại từ nhân xưng**: Giọng TTS được cố định là giọng nam. LUÔN LUÔN dùng đại từ nhân xưng **"thầy"** (khi xưng hô hướng dẫn/giảng dạy), **TUYỆT ĐỐI KHÔNG dùng "cô"**. Gọi người xem là "các bạn nhỏ", "các em" hoặc "các con".
 
-### ⚠️ CRITICAL: Vietnamese TTS Phonetic Rules
+### Mandatory rules for `voiceText`
 
-The `voiceText` field is read aloud by LucyLab/ElevenLabs Vietnamese TTS. **Numbers and symbols are read literally** — if you write "5.5", TTS may say "năm rưỡi" (five and a half — WRONG for version numbers). **Always spell out numbers in Vietnamese phonetic form** in `voiceText`. The `templateData` fields (visual text on screen) can keep the original "5.5" / "82.7%" formatting.
+Before generating or editing narration, **read and follow [voice-text-rules.md](../../../docs/voice-text-rules.md)**. Apply these rules to every scene, including the hook and outro, and check them again before writing `script.json`.
 
-**Mandatory rules for `voiceText`:**
-
-| Number form | WRONG (TTS misreads) | RIGHT (spell out in Vietnamese) |
-|---|---|---|
-| Decimal version | `GPT 5.5` → "năm rưỡi" ❌ | `GPT năm chấm năm` ✅ |
-| Decimal stat | `82.7%` | `tám mươi hai phẩy bảy phần trăm` |
-| Version | `iPhone 17` | `iPhone mười bảy` (or `iPhone 17` works for whole numbers) |
-| Version with point | `iOS 18.2` | `iOS mười tám chấm hai` |
-| Tech spec | `200MP` | `hai trăm megapixel` |
-| Battery | `5000mAh` | `năm nghìn miliampe giờ` |
-| Tokens | `1M tokens` / `1000000 tokens` | `một triệu token` |
-| Price VND | `21 triệu đồng` | `hai mươi mốt triệu đồng` |
-| Price USD | `$5` | `năm đô la` (or `năm đô`) |
-| Multiplier | `2x` | `gấp đôi` (more natural than "hai lần") |
-| Year | `2026` | `hai nghìn không trăm hai mươi sáu` (or just `năm 2026` reads OK) |
-| Percentage with decimal | `30%` | `ba mươi phần trăm` |
-| Time | `60 giây` | `sáu mươi giây` |
-| Frequency | `5G` | `năm gờ` (be careful — TTS often says "năm-gờ") |
-
-**Notation choices:**
-- For decimal point use `chấm` (more spoken/natural) or `phẩy` (formal). Both work; pick consistent.
-- For comma separator, use `phẩy` (e.g. "1,000" → "một nghìn")
-- For ratio "3:1" → say `ba trên một` or `ba so với một`
-
-**English brand names — keep as-is**, TTS handles them OK:
-- `Apple`, `Google`, `OpenAI`, `Microsoft`, `TikTok`, `YouTube` ✅
-
-**English acronyms — write phonetically if TTS misreads:**
-- `AI` → usually OK, sometimes write `ây ai` for clarity
-- `API` → write `ây pi ai` if matter
-- `GPT` → usually OK; if not, write `gí pi tí`
-- `iOS` → write `ai ô ét` if matter
-
-**Symbols to AVOID in voiceText:**
-- `→` `&` `%` `$` `#` `+` `=` (TTS may say literal name or skip)
-- `!` `?` at end of sentence is OK — they create natural intonation
-- Emoji: NEVER (TTS pronounces or skips inconsistently)
-- URLs: NEVER (TTS reads dot/slash literally)
-
-**End each `voiceText` sentence with `.` or `?`** for natural pause/intonation.
-
-**Examples — full scene:**
-
-WRONG (will sound bad):
-```json
-{ "voiceText": "GPT 5.5 đạt 82.7% trên Terminal-Bench, vượt GPT 5.4 (75.1%)." }
-```
-→ TTS reads: "GPT năm rưỡi đạt tám mươi hai chấm bảy phần trăm trên Terminal-Bench..."
-
-RIGHT (natural):
-```json
-{ "voiceText": "GPT năm chấm năm đạt tám mươi hai phẩy bảy phần trăm trên Terminal Bench, vượt phiên bản năm chấm bốn ở mức bảy mươi lăm phẩy một." }
-```
-
-**Note**: `templateData` (text on screen) CAN use original formatting — the visual is separate from spoken:
-```json
-{
-  "voiceText": "GPT năm chấm năm đạt tám mươi hai phẩy bảy phần trăm.",
-  "templateData": {
-    "template": "stat-hero",
-    "value": "82.7%",                 ← Visual: keep readable formatting
-    "label": "Terminal-Bench"
-  }
-}
-```
-
-**Hook (most important — gets first 3 seconds of viewer attention):**
-- Must contain a claim, statistic, or curious question
-- NEVER generic ("Hôm nay chúng ta sẽ nói về..." is wrong)
-- ALWAYS include at least 1 effect: `flash-white-3f` or `particle-burst`
+**Opening / hook (mandatory order):**
+- Always greet the audience first, then state what today's video will do before starting its content.
+- A claim, statistic, or curious question may follow the greeting and purpose; never skip or replace them to prioritize the hook.
+- If the problem is in English, follow the shared rules: announce the English reading, read the original verbatim using Vbee English TTS (`VBEE_VOICE_CODE_EN=am_echo`) at `0.9×`, read the full Vietnamese translation, then begin the lesson/solution. Generate and place the English audio separately; do not pass it to Vietnamese TTS.
+- Include at least 1 effect: `flash-white-3f` or `particle-burst`.
 
 **Visual rules:**
 - For image scenes: `background.src = "$source.image"` (literal — CLI substitutes)
@@ -138,12 +81,12 @@ RIGHT (natural):
 - Each line ≤ 25 characters
 - Each scene 1-3 lines
 
-**Outro (always fixed format):**
+**Outro (always finish with a wish; CTA comes before it):**
 ```json
 {
   "id": "outro",
   "type": "outro",
-  "voiceText": "Theo dõi Công nghệ 24h để xem bản tin mới mỗi ngày.",
+  "voiceText": "Theo dõi Công nghệ hai mươi tư giờ để xem bản tin mới mỗi ngày. Thầy chúc các con học tốt và luôn vui vẻ.",
   "visual": {
     "background": { "type": "gradient", "preset": "outro-purple" },
     "text": {
@@ -163,22 +106,26 @@ Replace `<DOMAIN>` with the actual domain string. Note: outro line 1 is shortene
 ### Step 5: Self-validate before writing
 
 Check:
-- Total word count ~150-200
+- Typical Vietnamese word count ~150-200; extend for mandatory opening, full problem/translation, and closing wish
 - Every line.content ≤ 25 chars
-- 5-8 scenes total
+- Typically 5-8 scenes; allow extra scenes for the complete problem/translation
 - scenes[0].type === "hook"
 - last scene type === "outro"
+- Opening greets viewers and states today's purpose before content; final spoken sentence is a wish
+- For English problems: announcement → verbatim Vbee TTS (`VBEE_VOICE_CODE_EN`) English audio at `0.9×` → full Vietnamese translation → lesson/solution; timeline includes each segment in full
 - All enum values valid (see spec Section 4.2)
+- Every `voiceText` follows `../../../docs/voice-text-rules.md` (including fully spelled-out numbers and male persona)
+- Every one-off file is inside this run's `output/<session>/`
 
-If invalid, fix yourself silently. Up to 2 self-correction passes. After that, write anyway — the CLI's Zod validation will produce a precise error message that the user can act on.
+If invalid, fix yourself silently. Up to 2 self-correction passes. Never proceed with a known violation of the mandatory `voiceText` or session-file rules; report any unresolved violation. For remaining schema errors, the CLI's Zod validation will produce a precise error message that the user can act on.
 
 ### Step 6: Write script.json
 
-Use the Write tool (not Bash) to write the validated JSON to `<outputDir>/script.json`.
+Use the agent's file-writing/editing tool to write the validated JSON to `<outputDir>/script.json`.
 
 ### Step 7: Run the pipeline
 
-Use Bash, **foreground** (not background), stream output:
+Use the agent's shell tool, **foreground** (not background), stream output:
 
 ```bash
 npm run pipeline -- <outputDir>/script.json
@@ -193,9 +140,9 @@ If exit code != 0:
 If successful, report to user with markdown links:
 
 ```markdown
-✓ Video:  [video.mp4](output/<slug>-<timestamp>/video.mp4)
-✓ Audio:  [voice.mp3](output/<slug>-<timestamp>/voice.mp3) — for CapCut
-✓ Script: [script.txt](output/<slug>-<timestamp>/script.txt) — for CapCut auto-caption
+✓ Video:  [video.mp4](output/<session>/video.mp4)
+✓ Audio:  [voice.mp3](output/<session>/voice.mp3) — for CapCut
+✓ Script: [script.txt](output/<session>/script.txt) — for CapCut auto-caption
 Tổng thời lượng: XX.Xs
 ```
 
@@ -222,7 +169,7 @@ Generated `script.json` (excerpt):
   "scenes": [
     {
       "id": "hook", "type": "hook",
-      "voiceText": "Apple vừa ra mắt iPhone 17 với camera hai trăm megapixel.",
+      "voiceText": "Thầy chào các bạn nhỏ. Hôm nay thầy cùng các con tìm hiểu iPhone mười bảy. Apple vừa ra mắt iPhone mười bảy với camera hai trăm megapixel.",
       "visual": {
         "background": { "type": "image", "src": "$source.image", "kenBurns": "zoom-in" },
         "overlay":    { "darkness": 0.4 },
@@ -256,7 +203,7 @@ Generated `script.json` (excerpt):
   "scenes": [
     {
       "id": "hook", "type": "hook",
-      "voiceText": "OpenAI vừa công bố mô hình mới có khả năng lập luận như con người.",
+      "voiceText": "Thầy chào các bạn nhỏ. Hôm nay thầy cùng các con tìm hiểu mô hình mới của OpenAI. OpenAI vừa công bố mô hình mới có khả năng lập luận như con người.",
       "visual": {
         "background": { "type": "gradient", "preset": "news-dark" },
         "text": {

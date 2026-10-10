@@ -1,0 +1,16 @@
+{
+  "version": "2.0",
+  "metadata": { "title": "Giải phương trình hai x cộng năm bằng mười bảy", "channel": "Học Toán cùng thầy" },
+  "problem": { "original": "Tìm x biết: 2x + 5 = 17.", "language": "vi", "answer": "x = 6", "topic": "Phương trình", "level": "THCS" },
+  "voice": { "provider": "lucylab", "voiceId": "${VOICE_ID}", "gender": "male", "speed": 1 },
+  "scenes": [
+    { "id": "opening", "type": "hook", "phase": "introduction", "voiceText": "Thầy chào các em. Hôm nay thầy cùng các em giải một phương trình và kiểm tra lại kết quả.", "templateData": { "template": "math-intro", "title": "Tìm x từng bước", "subtitle": "Hiểu phép biến đổi · Kiểm tra kết quả" } },
+    { "id": "problem", "type": "body", "phase": "problem", "voiceText": "Đề bài yêu cầu tìm x, biết hai nhân x cộng năm bằng mười bảy.", "templateData": { "template": "math-problem", "title": "Đề bài", "text": "Tìm x biết: 2x + 5 = 17.", "latex": "2x + 5 = 17" } },
+    { "id": "strategy", "type": "body", "phase": "strategy", "voiceText": "Thầy sẽ đưa phần chứa x đứng riêng. Mỗi phép biến đổi cần được thực hiện ở cả hai vế.", "templateData": { "template": "math-step", "title": "Hướng giải", "explanation": "Thực hiện cùng một phép tính ở hai vế.", "equations": ["2x + 5 = 17"], "note": "Mục tiêu: đưa x đứng riêng." } },
+    { "id": "subtract", "type": "body", "phase": "solution", "voiceText": "Trừ năm ở cả hai vế. Khi đó, hai nhân x bằng mười hai.", "templateData": { "template": "math-step", "title": "Bước 1: Trừ 5 ở hai vế", "equations": ["2x + 5 - 5 = 17 - 5", "2x = 12"] } },
+    { "id": "divide", "type": "body", "phase": "solution", "voiceText": "Chia cả hai vế cho hai. Ta được x bằng sáu.", "templateData": { "template": "math-step", "title": "Bước 2: Chia hai vế cho 2", "equations": ["x = \\frac{12}{2}", "x = 6"] } },
+    { "id": "check", "type": "body", "phase": "check", "voiceText": "Thầy thay sáu vào đề bài. Hai nhân sáu cộng năm bằng mười bảy, đúng với vế phải.", "templateData": { "template": "math-step", "title": "Kiểm tra bằng cách thay lại", "equations": ["2 \\times 6 + 5 = 12 + 5 = 17"], "note": "Vế trái bằng vế phải." } },
+    { "id": "answer", "type": "body", "phase": "answer", "voiceText": "Vậy đáp án là x bằng sáu. Các em nhớ thực hiện phép biến đổi ở cả hai vế và kiểm tra lại nhé.", "templateData": { "template": "math-answer", "title": "Kết luận", "answer": "x = 6", "takeaway": "Biến đổi hai vế · Thay lại để kiểm tra" } },
+    { "id": "closing", "type": "outro", "phase": "closing", "voiceText": "Thầy chúc các em học tốt và luôn tự tin khi giải toán.", "templateData": { "template": "math-closing", "message": "Thầy chúc các em học tốt và luôn tự tin khi giải toán." } }
+  ]
+}

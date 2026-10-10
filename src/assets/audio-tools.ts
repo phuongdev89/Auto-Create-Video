@@ -1,7 +1,6 @@
 import { spawn } from "node:child_process";
 import { writeFile, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
-import { tmpdir } from "node:os";
+import { join, resolve, dirname } from "node:path";
 
 function run(cmd: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -27,6 +26,18 @@ export async function getDurationSec(path: string): Promise<number> {
   const d = parseFloat(out.trim());
   if (isNaN(d)) throw new Error(`ffprobe returned non-numeric duration for ${path}: ${out}`);
   return d;
+}
+
+/** Actual decoded samples, excluding MP3 encoder padding. Long lessons must not accumulate padding drift. */
+export async function getDecodedDurationSec(path: string): Promise<number> {
+  const out = await run("ffprobe", ["-v", "error", "-select_streams", "a:0", "-show_frames", "-show_streams",
+    "-show_entries", "frame=nb_samples:stream=sample_rate", "-of", "json", path]);
+  const data = JSON.parse(out) as { streams?: { sample_rate: string }[]; frames?: { nb_samples: number }[] };
+  const rate = Number(data.streams?.[0]?.sample_rate);
+  const samples = data.frames?.reduce((n, f) => n + f.nb_samples, 0) ?? 0;
+  if (!Number.isFinite(rate) || rate <= 0 || !Number.isFinite(samples) || samples <= 0)
+    throw new Error(`Cannot measure decoded audio duration for ${path}`);
+  return samples / rate;
 }
 
 /**
@@ -55,7 +66,7 @@ export async function concatWithSilence(
     return;
   }
 
-  const tmp = await mkdtemp(join(tmpdir(), "concat-"));
+  const tmp = await mkdtemp(join(dirname(resolve(outPath)), ".concat-"));
   try {
     // Generate WAV silence (lossless, no encoder priming pops)
     const silencePath = join(tmp, "silence.wav");

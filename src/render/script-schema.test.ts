@@ -6,6 +6,18 @@ const load = (name: string) =>
   JSON.parse(readFileSync(`tests/fixtures/${name}`, "utf8"));
 
 describe("ScriptSchema", () => {
+  it.each([0.25, 1, 1.9])("accepts Vbee voice at speed %s", (speed) => {
+    const data = load("sample-script-with-image.json");
+    data.voice = { provider: "vbee", voiceId: "hn_female_thutrang_48k-fhg", speed };
+    expect(() => ScriptSchema.parse(data)).not.toThrow();
+  });
+
+  it("rejects Vbee speed outside provider range", () => {
+    const data = load("sample-script-with-image.json");
+    data.voice = { provider: "vbee", voiceId: "voice", speed: 2 };
+    expect(() => ScriptSchema.parse(data)).toThrow(/speed/);
+  });
+
   it("accepts sample-script-with-image.json", () => {
     expect(() => ScriptSchema.parse(load("sample-script-with-image.json"))).not.toThrow();
   });
