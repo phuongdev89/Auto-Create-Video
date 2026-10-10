@@ -42,6 +42,19 @@ describe("math verification gate", () => {
     const scope = accept(); await verifyMathLesson(script, dir, { config: updated });
     expect(scope.isDone()).toBe(true); expect((await report()).fingerprint).not.toBe(original);
   });
+  it("reuses an audit after changing concept but reaudits changed object groups", async () => {
+    accept(); await verifyMathLesson(script, dir, { config: cfg });
+    const original = (await report()).fingerprint;
+    script.visualConcept = "notebook";
+    await verifyMathLesson(script, dir, { config: cfg });
+    expect((await report()).fingerprint).toBe(original);
+    const step = script.scenes[3].templateData;
+    if (step.template !== "math-step") throw new Error("Expected math step");
+    step.objects = [{ label: "Phần cộng thêm", count: 5, color: "blue" }];
+    const scope = accept(); await verifyMathLesson(script, dir, { config: cfg });
+    expect(scope.isDone()).toBe(true);
+    expect((await report()).fingerprint).not.toBe(original);
+  });
   it("invalidates pass before a forced retry fails", async () => {
     accept(); await verifyMathLesson(script, dir, { config: cfg });
     nock("https://audit.example").post("/v1/chat/completions").reply(503, { error: "secret" });

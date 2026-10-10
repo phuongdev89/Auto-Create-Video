@@ -9,6 +9,7 @@
 - Không ép bài giảng vào một phút/tám cảnh. Giữ đầy đủ đề, giả thiết và bước kiểm tra.
 - Khi nhận yêu cầu giải toán, trước khi giải hoặc viết kịch bản phải hiển thị lựa chọn để người dùng bấm: **Giải ra đáp án** / **Hướng dẫn giải và để ngỏ đáp án**. Đọc mục "Chọn cách giải" trong [workflow](docs/math-video-workflow.md) và chờ người dùng chọn; không tự chọn mặc định.
 - Lưu lựa chọn vào `solutionMode` của kịch bản. Chế độ hướng dẫn giữ đáp án cuối ngoài lời đọc, hình, phụ đề và kết quả trả cho người xem; vẫn giải và kiểm chứng nội bộ.
+- Với video mới, cho người dùng xem và chọn concept theo [quy tắc concept](docs/video-concepts.md) trước TTS/render; lưu `visualConcept`, dùng lại khi tiếp tục cùng bài.
 
 ## Persona, Voice & Personal Pronouns
 

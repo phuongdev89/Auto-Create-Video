@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { renderFormula } from "./math-expression.js";
+import { MathConceptId, MathObjects } from "./math-concepts.js";
 
 const text = z.string().trim().min(1);
 const latex = text.superRefine((value, ctx) => {
@@ -18,7 +19,7 @@ export const MathTemplateData = z.discriminatedUnion("template", [
   z.object({ template: z.literal("math-intro"), title: text, subtitle: text.optional() }),
   z.object({ template: z.literal("math-problem"), title: text.default("Đề bài"), text, latex: latex.optional() }),
   z.object({ template: z.literal("math-step"), title: text, explanation: text.optional(),
-    equations: z.array(latex).max(4).default([]), note: text.optional() }),
+    equations: z.array(latex).max(4).default([]), note: text.optional(), objects: MathObjects.optional() }),
   z.object({ template: z.literal("math-diagram"), title: text, shapes: z.array(DiagramShape).min(1).max(100),
     explanation: text.optional(), latex: latex.optional() }),
   z.object({ template: z.literal("math-answer"), title: text.default("Đáp án"), answer: latex,
@@ -38,6 +39,7 @@ const normalized = (s: string) => s.replace(/\s+/g, " ").trim();
 export const MathScriptSchema = z.object({
   version: z.literal("2.0"),
   solutionMode: z.enum(["answer", "guided"]).default("answer"),
+  visualConcept: MathConceptId.default("classic"),
   metadata: z.object({
     title: text, channel: text.default("Học Toán cùng thầy"),
     source: z.object({ url: z.string().default("local"), domain: z.string().default("Bài học toán"),

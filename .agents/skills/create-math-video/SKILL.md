@@ -45,14 +45,21 @@ the delivered text, visuals, narration, subtitles or links to private solution.m
    Vietnamese numbers/operators are written in words.
 6. Use math templates, LaTeX and declarative diagrams. Keep equations readable.
    SFX default off. Split long passages without losing source text.
-7. Run npm run pipeline -- output/<session>/script.json --validate. Fix errors
+7. For a new video, follow [concept selection](../../../docs/video-concepts.md).
+   Run npm run pipeline -- output/<session>/script.json --concepts and open its
+   local URL. Let the user compare the actual lesson frames and save a choice;
+   wait for an explicit selection, never infer approval from a checked radio.
+   Keep the saved visualConcept when resuming. Stop the server before production.
+   Concepts do not change the solution or narration. Explicit object groups must
+   match the teaching content and must not reveal a guided lesson's final answer.
+8. Run npm run pipeline -- output/<session>/script.json --validate. Fix errors
    then run the same command with --audit before paid TTS. AUDIT_AI_* selects
    the independent verifier. Resolve failed/uncertain findings and audit again;
    only a matching pass permits production. Missing verifier configuration or
    evidence blocks TTS/render. Never manually mark a report pass.
    Then run pipeline. Missing Vbee English configuration is a
    blocker; never silently substitute another provider.
-8. Inspect frames and MP4 metadata/audio. Report absolute links to video, audio,
+9. Inspect frames and MP4 metadata/audio. Report absolute links to video, audio,
    transcript with actual evidence and remaining gaps. Solution and verification
    reports are private in guided mode: do not return their links or answers. Provider
    mocks are not proof of real TTS.

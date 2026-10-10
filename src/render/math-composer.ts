@@ -13,15 +13,19 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const paragraph = (s?: string, cls = "math-text") => s ? `<div class="${cls}">${esc(s)}</div>` : "";
 const formula = (s?: string) => s ? `<div class="math-equation">${renderFormula(s)}</div>` : "";
 
-function content(td: MathTemplate): string {
+function content(td: MathTemplate, concept: MathScript["visualConcept"]): string {
   switch (td.template) {
     case "math-intro": return paragraph(td.subtitle) + '<div class="math-intro-mark">∑</div>';
     case "math-problem": return paragraph(td.text, "math-problem-text") + formula(td.latex);
-    case "math-step": return paragraph(td.explanation) + td.equations.map(x => formula(x)).join("") + paragraph(td.note, "math-note");
+    case "math-step": {
+      const objects = td.objects ? `<div class="math-objects">${td.objects.map(group => `<div class="math-object-group" data-color="${group.color}"><div class="math-object-label">${esc(group.label)}</div><div class="math-object-tokens" role="img" aria-label="${esc(group.label)}: ${group.count}">${Array.from({ length: group.count }, () => '<span class="math-object" aria-hidden="true"></span>').join("")}</div></div>`).join("")}</div>` : "";
+      return paragraph(td.explanation) + objects + td.equations.map(x => formula(x)).join("") + paragraph(td.note, "math-note");
+    }
     case "math-answer": return formula(td.answer) + paragraph(td.explanation) + paragraph(td.takeaway, "math-note");
     case "math-closing": return paragraph(td.message);
     case "math-diagram": {
-      const colors = { ink: "#173047", blue: "#1261a0", green: "#147050", orange: "#924b12" };
+      const colors = concept === "chalkboard" ? { ink: "#f5f3e8", blue: "#91d5ff", green: "#b0eccb", orange: "#ffcf94" }
+        : { ink: "#173047", blue: "#1261a0", green: "#147050", orange: "#924b12" };
       const shapes = td.shapes.map(s => {
         const paint = `stroke="${colors[s.color]}" stroke-width="4" fill="none"`;
         switch (s.kind) {
@@ -38,8 +42,11 @@ function content(td: MathTemplate): string {
 export function composeMathHtml(args: {
   script: MathScript; sceneAudio: { id: string; durationSec: number }[];
   gapSec: number; audioRelPath: string; outroHoldSec?: number;
+  previewSceneId?: string;
 }): string {
   const { script, gapSec, sceneAudio } = args;
+  const concept = script.visualConcept ?? "classic";
+  if (args.previewSceneId && !script.scenes.some(scene => scene.id === args.previewSceneId)) throw new Error("Unknown preview scene");
   let cursor = 0;
   const scenes = script.scenes.map((s, index) => {
     const audio = sceneAudio.find(a => a.id === s.id);
@@ -47,11 +54,12 @@ export function composeMathHtml(args: {
     const start = cursor;
     const duration = audio.durationSec + (index < script.scenes.length - 1 ? gapSec : (args.outroHoldSec ?? 3));
     cursor += duration;
+    if (args.previewSceneId && s.id !== args.previewSceneId) return "";
     return `<section class="math-scene clip" id="math-${s.id}" data-start="${start.toFixed(4)}" data-duration="${duration.toFixed(4)}" data-track-index="1">
       <div class="math-board">
         <div class="math-phase">${esc(phaseLabels[s.phase])} · ${index + 1}/${script.scenes.length}</div>
         <h1>${esc(s.templateData.title)}</h1>
-        <div class="math-content">${content(s.templateData)}</div>
+        <div class="math-content">${content(s.templateData, concept)}</div>
       </div>
     </section>`;
   }).join("\n");
@@ -59,10 +67,10 @@ export function composeMathHtml(args: {
   const animation = readFileSync(join(templates, "math-animations.js"), "utf8");
   return `<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>${esc(script.metadata.title)}</title>
     <link rel="stylesheet" href="math-assets/katex.min.css"><link rel="stylesheet" href="math-styles.css">
-    <script src="math-assets/gsap.min.js"></script></head><body>
+    <script src="math-assets/gsap.min.js"></script></head><body data-concept="${concept}"${args.previewSceneId ? ` data-preview-scene="math-${esc(args.previewSceneId)}"` : ""}>
     <div id="math-stage" data-composition-id="math-video" data-width="1080" data-height="1920" data-start="0" data-duration="${cursor.toFixed(4)}">
       <header class="math-brand"><span class="math-logo">∑</span><div>${esc(script.metadata.channel)}<small>GIẢI TOÁN TỪNG BƯỚC</small></div></header>
-      <audio id="math-voice" class="clip" data-start="0" data-duration="${audioDuration.toFixed(4)}" data-track-index="0" src="${esc(args.audioRelPath)}"></audio>
+      ${args.previewSceneId ? "" : `<audio id="math-voice" class="clip" data-start="0" data-duration="${audioDuration.toFixed(4)}" data-track-index="0" src="${esc(args.audioRelPath)}"></audio>`}
       ${scenes}
       <footer class="math-footer">${esc([script.problem.level, script.problem.topic].filter(Boolean).join(" · ") || "Hiểu cách làm · Kiểm tra đáp án")}</footer>
     </div><script>${animation}</script></body></html>`;

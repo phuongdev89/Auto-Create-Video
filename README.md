@@ -42,6 +42,21 @@ Xem [workflow chi tiết](docs/math-video-workflow.md) và
 giải thích lý do từng bước, gợi ý vừa đủ và hướng dẫn tự kiểm tra. Tài liệu có ví dụ
 cho cả hai chế độ và các điểm cần rà soát trước khi trả bài hoặc gọi TTS.
 
+## Chọn concept video
+
+Sau khi chuẩn bị `script.json` trong session, chạy:
+
+```powershell
+npm run pipeline -- output/<session>/script.json --concepts
+```
+
+Mở URL được in ra để so sánh **Bảng phấn**, **Vở ô ly** và **Đồ vật trực quan**
+bằng nội dung bài thực tế. Xem Đề bài/Bước giải/Kết thúc, chọn rồi bấm
+**Sử dụng concept này**. Lựa chọn lưu vào `visualConcept`; Ctrl+C dừng trang
+trước khi chạy validate/audit/pipeline. Preview không gọi TTS. Concept áp dụng
+cho cả bố cục, màu, công thức, sơ đồ và chuyển động; kịch bản cũ vẫn dùng giao diện
+`classic`. Xem [quy tắc concept](docs/video-concepts.md).
+
 ## Cấu hình giọng đọc
 
 Điền `.env.local`, chọn `TTS_PROVIDER` và một giọng **nam** thực tế từ thư viện

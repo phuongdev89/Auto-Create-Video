@@ -53,6 +53,23 @@ ghi giả thiết, lời giải, đáp án và cách kiểm tra: thay nghiệm, 
 xác định, đơn vị, xét trường hợp hoặc chứng minh. Với trắc nghiệm ghi cả giá trị và
 phương án. Không chỉ đoán chữ cái.
 
+## Chọn concept video
+
+Với bài mới có yêu cầu video, sau khi chọn cách giải và chuẩn bị kịch bản,
+cho người dùng xem ba concept bằng chính nội dung bài: **Bảng phấn**, **Vở ô ly**,
+**Đồ vật trực quan**. Đọc [quy tắc concept](video-concepts.md). Chạy:
+
+```powershell
+npm run pipeline -- output/<session>/script.json --concepts
+```
+
+Mở URL loopback được in ra, xem ba khung Đề bài/Bước giải/Kết thúc và bấm
+**Sử dụng concept này** để lưu `visualConcept` vào kịch bản. Chờ người dùng chọn;
+không xem radio được đánh dấu sẵn là chấp thuận. Khi tiếp tục cùng bài, dùng lại
+concept đã lưu. Chọn xong dừng server bằng Ctrl+C rồi validate/audit/TTS/render.
+Preview là khung tĩnh để duyệt bố cục, không gọi provider và chưa chứng minh lời giải
+đúng. Chỉ có yêu cầu giải toán bằng văn bản thì không cần bước concept video.
+
 ## Kịch bản version 2.0
 
 Schema: ../src/render/math-schema.ts. Ví dụ chạy được: ../examples/math/algebra.json,
@@ -61,6 +78,8 @@ geometry-english.json, calculus.json.
 - solutionMode: `answer` hoặc `guided`, đúng lựa chọn người dùng. Kịch bản cũ
   thiếu trường này được pipeline hiểu là `answer`; agent luôn ghi rõ cho bài mới.
 - metadata: title, channel; source tùy chọn, không cần bài báo hoặc ảnh nền.
+- visualConcept: `chalkboard`, `notebook` hoặc `manipulatives`, đúng lựa chọn đã lưu.
+  Kịch bản cũ thiếu trường này dùng `classic` để giữ bố cục cũ.
 - problem: original, language (vi/en), topic/level tùy chọn. `answer` (LaTeX)
   bắt buộc với `answer`, phải bỏ hẳn với `guided`.
   translation bắt buộc với đề tiếng Anh.
