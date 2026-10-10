@@ -48,12 +48,22 @@ describe("math production orchestration", () => {
     const html = await readFile(join(session, "index.html"), "utf8");
     expect(html).toContain('id="math-practice"');
     expect(html).not.toContain('id="math-answer"');
+    const horizontal = await readFile(join(session, "landscape/index.html"), "utf8");
+    expect(horizontal).toContain('data-width="1920" data-height="1080"');
+    expect(horizontal).toContain('data-orientation="landscape"');
+    expect(horizontal).not.toContain('id="math-answer"');
+    expect(horizontal).not.toContain('x = 6');
+    const formats = JSON.parse(await readFile(join(session, "formats.json"), "utf8"));
+    expect(formats.landscape.video).toBe("video-landscape.mp4");
   }, 30000);
   it("creates composition/audio and regenerates only changed narration", async () => {
     const data = await setup("algebra"); const script = join(session, "script.json");
     await runPipeline(script, { render: false });
     expect(mocks.generate).toHaveBeenCalledTimes(8);
     expect(await readFile(join(session, "index.html"), "utf8")).toContain("math-video");
+    const direction = JSON.parse(await readFile(join(session, "scene-plan.json"), "utf8"));
+    expect(direction.timing).toBe("measured-audio");
+    expect(direction.scenes).toHaveLength(data.scenes.length);
     expect(await readFile(join(session, "math-assets/katex.min.css"), "utf8")).toContain("@font-face");
     await runPipeline(script, { render: false });
     expect(mocks.generate).toHaveBeenCalledTimes(8);

@@ -12,10 +12,12 @@ import { getDurationSec, getDecodedDurationSec, concatWithSilence, mixSfxOntoVoi
 import { indexSfxLibrary, pickSfxForScene, defaultPlayback } from "./src/assets/sfx-selector.js";
 import { existsSync } from "node:fs";
 import { composeHtml } from "./src/render/html-composer.js";
-import { renderWithHyperframes } from "./src/render/hyperframes-runner.js";
+import { planMathScenes } from "./src/render/math-direction.js";
+import { writeLandscapeProject, renderBothFormats } from "./src/render/formats.js";
 import { copyMathAssets } from "./src/render/math-composer.js";
 import { mathAudioFingerprint } from "./src/tts/audio-cache.js";
 import { verifyMathLesson } from "./src/audit/math-verifier.js";
+import { updateProgress } from "./src/progress/state.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TPL_DIR = join(__dirname, "src", "render", "templates");
@@ -37,6 +39,7 @@ async function main() {
 
   const cfg = loadConfig();
   console.log(`Re-rendering: ${outputDir}`);
+  await updateProgress(outputDir, "Rerender", "Đọc kịch bản và kiểm tra cache audit/audio trước dựng lại.");
 
   // Load script.json
   const raw = JSON.parse(await readFile(join(outputDir, "script.json"), "utf8"));
@@ -46,7 +49,10 @@ async function main() {
     raw.voice.voiceId = cfg.ttsProvider === "lucylab" ? cfg.lucylabVoiceId! : cfg.elevenlabsVoiceId!;
   }
   const script = ScriptSchema.parse(raw);
-  if (script.version === "2.0") await verifyMathLesson(script, outputDir);
+  if (script.version === "2.0") {
+    await updateProgress(outputDir, "Audit", "Kiểm chứng hoặc dùng lại cache pass khớp trước rerender.");
+    await verifyMathLesson(script, outputDir);
+  }
 
   // Probe per-scene durations from existing voice files
   const sceneAudio = await Promise.all(
@@ -131,7 +137,7 @@ async function main() {
   if (bundledAvatar && script.version !== "2.0") await copyFile(bundledAvatar, ttAvatarOut);
 
   // Compose HTML
-  const html = composeHtml({
+  const composeArgs = {
     script,
     sceneAudio: sceneAudio.map((a) => ({ id: a.id, durationSec: a.durationSec })),
     gapSec: SCENE_GAP_SEC,
@@ -140,8 +146,10 @@ async function main() {
     tiktok: cfg.tiktok,
     tiktokAvatarRelPath: ttAvatarFile,
     outroHoldSec: 3,
-  });
+  };
+  const html = composeHtml(composeArgs);
   await writeFile(join(outputDir, "index.html"), html);
+  if (script.version === "2.0") await writeFile(join(outputDir, "scene-plan.json"), JSON.stringify({ timing: "measured-cached-audio", scenes: planMathScenes(script, sceneAudio, SCENE_GAP_SEC, 3) }, null, 2));
   await writeFile(join(outputDir, "hyperframes.json"), JSON.stringify(HYPERFRAMES_CONFIG, null, 2));
   await writeFile(join(outputDir, "meta.json"), JSON.stringify({
     id: basename(outputDir),
@@ -152,10 +160,18 @@ async function main() {
   await copyFile(join(TPL_DIR, "animations.js"), join(outputDir, "animations.js"));
   if (script.version === "2.0") await copyMathAssets(outputDir);
 
+  await writeLandscapeProject(outputDir, composeHtml({ ...composeArgs, orientation: "landscape" }));
+
   // Render
   const videoPath = join(outputDir, "video.mp4");
-  await renderWithHyperframes({ compositionDir: outputDir, outputPath: videoPath, check: script.version === "2.0" });
+  await updateProgress(outputDir, "Render", "Composition từ audio cache đã sẵn sàng; đang kiểm tra/render HyperFrames.");
+  await renderBothFormats({ compositionDir: outputDir, outputPath: videoPath, check: script.version === "2.0" });
+  await updateProgress(outputDir, "Hoàn tất", "Đã rerender đủ dọc và ngang từ audio cache.");
   console.log(`\nDone: ${videoPath}`);
+  console.log(`Portrait: ${join(outputDir, "video-portrait.mp4")}\nLandscape: ${join(outputDir, "video-landscape.mp4")}`);
 }
 
-main().catch((e) => { console.error("Re-render failed:", e); process.exit(1); });
+main().catch(async (e) => {
+  if (process.argv[2]) await updateProgress(process.argv[2], "Lỗi — đã dừng", e instanceof Error ? e.message : "Rerender không hoàn tất.");
+  console.error("Re-render failed:", e); process.exit(1);
+});

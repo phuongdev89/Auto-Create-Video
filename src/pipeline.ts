@@ -10,11 +10,13 @@ import { getDurationSec, getDecodedDurationSec, concatWithSilence, mixSfxOntoVoi
 import { indexSfxLibrary, pickSfxForScene, defaultPlayback } from "./assets/sfx-selector.js";
 import { existsSync } from "node:fs";
 import { composeHtml } from "./render/html-composer.js";
-import { renderWithHyperframes } from "./render/hyperframes-runner.js";
+import { planMathScenes } from "./render/math-direction.js";
+import { writeLandscapeProject, renderBothFormats } from "./render/formats.js";
 import { log } from "./utils/logger.js";
 import { copyMathAssets } from "./render/math-composer.js";
 import { mathAudioFingerprint } from "./tts/audio-cache.js";
 import { verifyMathLesson } from "./audit/math-verifier.js";
+import { updateProgress } from "./progress/state.js";
 
 const TOTAL_STEPS = 8;
 const DURATION_MIN_SEC = 48;
@@ -46,6 +48,7 @@ const HYPERFRAMES_CONFIG = {
 export async function runPipeline(scriptPath: string, options: { render?: boolean } = {}): Promise<void> {
   const cfg = loadConfig();
   const outputDir = dirname(scriptPath);
+  await updateProgress(outputDir, "Kiểm tra kịch bản", "Đang đọc cấu hình và kiểm tra cấu trúc bài.");
   log.info(`Output directory: ${outputDir}`);
 
   // STEP 1
@@ -68,6 +71,7 @@ export async function runPipeline(scriptPath: string, options: { render?: boolea
   const englishClient = isMath && script.problem.language === "en" ? createEnglishTtsClient(cfg) : undefined;
   if (isMath) {
     log.info("Verify the complete math solution and lesson before TTS (or reuse a matching pass).");
+    await updateProgress(outputDir, "Audit", "Kiểm chứng lời giải; chỉ tiếp tục khi pass hoặc cache pass khớp.");
     await verifyMathLesson(script, outputDir);
   }
 
@@ -83,6 +87,7 @@ export async function runPipeline(scriptPath: string, options: { render?: boolea
 
   // STEP 4
   const ttsClient = createTtsClient(cfg);
+  await updateProgress(outputDir, "TTS", "Chuẩn bị lời đọc từng cảnh; dùng lại audio cache khớp nếu có.");
   // Concurrency: LucyLab requires 1 (only 1 concurrent export per key);
   // ElevenLabs supports parallel calls but we keep 1 by default to be polite.
   const limit = pLimit(cfg.ttsConcurrency);
@@ -106,6 +111,7 @@ export async function runPipeline(scriptPath: string, options: { render?: boolea
       if (existsSync(out) && (!isMath || cached)) {
         const dur = await measureDuration(out);
         log.info(`  scene ${scene.id}: REUSE existing mp3 (${dur.toFixed(2)}s) — delete to force re-TTS`);
+        await updateProgress(outputDir, "TTS", `Cảnh ${scene.id}: dùng lại audio cache (${dur.toFixed(2)} giây).`);
         return { id: scene.id, path: out, durationSec: dur };
       }
 
@@ -115,6 +121,7 @@ export async function runPipeline(scriptPath: string, options: { render?: boolea
       if (fingerprint) await writeFile(cachePath, JSON.stringify({ fingerprint }));
       const dur = await measureDuration(out);
       log.info(`  scene ${scene.id}: ${dur.toFixed(2)}s`);
+      await updateProgress(outputDir, "TTS", `Cảnh ${scene.id}: hoàn tất audio (${dur.toFixed(2)} giây).`);
       return { id: scene.id, path: out, durationSec: dur };
     }),
   );
@@ -133,6 +140,7 @@ export async function runPipeline(scriptPath: string, options: { render?: boolea
 
   // STEP 5
   log.step(5, TOTAL_STEPS, "Concat voice scenes + mix SFX layer");
+  await updateProgress(outputDir, "Ghép audio", "Ghép lời đọc và SFX đã khai báo.");
   const voiceRawMp3 = join(outputDir, "voice-raw.mp3");
   const voiceMp3 = join(outputDir, "voice.mp3");
   await concatWithSilence(sceneAudio.map((a) => a.path), SCENE_GAP_SEC, voiceRawMp3);
@@ -205,6 +213,7 @@ export async function runPipeline(scriptPath: string, options: { render?: boolea
 
   // STEP 6 — Compose HTML + write hyperframes project files
   log.step(6, TOTAL_STEPS, "Compose HTML + project files");
+  await updateProgress(outputDir, "Composition", "Dựng bố cục và timeline theo audio thực tế.");
 
   // Resolve TikTok avatar — download URL if provided, else copy bundled default
   // Bundled avatar can be jpg/jpeg/png/webp — pick whichever exists
@@ -230,7 +239,7 @@ export async function runPipeline(scriptPath: string, options: { render?: boolea
     await copyFile(bundledAvatar, ttAvatarOut);
   }
 
-  const html = composeHtml({
+  const composeArgs = {
     script,
     sceneAudio: sceneAudio.map((a) => ({ id: a.id, durationSec: a.durationSec })),
     gapSec: SCENE_GAP_SEC,
@@ -239,10 +248,12 @@ export async function runPipeline(scriptPath: string, options: { render?: boolea
     tiktok: cfg.tiktok,
     tiktokAvatarRelPath: ttAvatarFile,
     outroHoldSec: OUTRO_HOLD_SEC,
-  });
+  };
+  const html = composeHtml(composeArgs);
 
   // hyperframes expects: index.html (NOT composition.html), hyperframes.json, meta.json in DIR
   await writeFile(join(outputDir, "index.html"), html);
+  if (script.version === "2.0") await writeFile(join(outputDir, "scene-plan.json"), JSON.stringify({ timing: "measured-audio", scenes: planMathScenes(script, sceneAudio, SCENE_GAP_SEC, OUTRO_HOLD_SEC) }, null, 2));
 
   await writeFile(join(outputDir, "hyperframes.json"), JSON.stringify(HYPERFRAMES_CONFIG, null, 2));
 
@@ -258,15 +269,20 @@ export async function runPipeline(scriptPath: string, options: { render?: boolea
   await copyFile(join(TPL_DIR, "animations.js"), join(outputDir, "animations.js"));
   if (isMath) await copyMathAssets(outputDir);
 
+  await writeLandscapeProject(outputDir, composeHtml({ ...composeArgs, orientation: "landscape" }));
+
   // STEP 7
   log.step(7, TOTAL_STEPS, "Render with hyperframes");
   const videoPath = join(outputDir, "video.mp4");
-  if (options.render !== false) await renderWithHyperframes({ compositionDir: outputDir, outputPath: videoPath, check: isMath });
+  await updateProgress(outputDir, options.render === false ? "Preview" : "Render", options.render === false ? "Composition sẵn sàng để xem và seek." : "Composition sẵn sàng; đang kiểm tra và render HyperFrames.");
+  if (options.render !== false) await renderBothFormats({ compositionDir: outputDir, outputPath: videoPath, check: isMath });
 
   // STEP 8
   log.step(8, TOTAL_STEPS, "Done");
+  await updateProgress(outputDir, "Hoàn tất", options.render === false ? "Đã dựng composition; chưa render MP4." : "Đã render đủ video dọc và ngang.");
   console.log("\n=== Result ===");
   console.log(options.render === false ? `Composition: ${join(outputDir, "index.html")}` : `Video:  ${videoPath}`);
+  console.log(options.render === false ? `Landscape composition: ${join(outputDir, "landscape/index.html")}` : `Portrait: ${join(outputDir, "video-portrait.mp4")}\nLandscape: ${join(outputDir, "video-landscape.mp4")}`);
   console.log(`Audio:  ${voiceMp3}  (cho CapCut)`);
   console.log(`Script: ${join(outputDir, "script.txt")}  (cho CapCut auto-caption)`);
   console.log(`Tong thoi luong: ${totalAudioSec.toFixed(2)}s`);

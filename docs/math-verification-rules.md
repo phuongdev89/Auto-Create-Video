@@ -97,7 +97,10 @@ npm run pipeline -- output/<session>/script.json
 Trong session có `verification.json` (báo cáo và cache) và `verification.md`
 (bản đọc được), gồm model, endpoint, thời điểm, fingerprint, lời giải độc lập,
 bằng chứng đối chiếu và lỗi nếu có. Đây là file nội bộ vì chứa đáp án đầy đủ;
-không trả link hoặc nội dung cho người xem ở chế độ `guided`.
+không trả link hoặc nội dung cho học sinh/người xem video ở chế độ `guided`.
+Người tạo được xem phần duyệt lời giải đầy đủ và kết quả audit trong chat/terminal
+trước chọn concept/TTS/render; đọc mục "Duyệt lời giải và audit" trong workflow.
+Không đưa phần duyệt riêng này vào gallery hoặc artifact bài giảng cho học sinh.
 
 Chỉ tái sử dụng pass có fingerprint khớp đề, ảnh, lời giải, nội dung bài giảng,
 model/endpoint và prompt. Sửa bất kỳ phần liên quan nào sẽ audit lại. Đổi giọng

@@ -18,6 +18,40 @@ khớp nội dung hiện tại. Thiếu cấu hình hoặc bằng chứng phải
 kiến thức nền, giải thích lý do của bước làm và xác định phần tự làm trong chế độ
 hướng dẫn. Rà soát mục cuối tài liệu trước khi trả bài hoặc gọi TTS.
 
+## Progress realtime xuyên suốt task
+
+Ngay khi bắt đầu task, tạo `output/<session>/` rồi chạy ở terminal riêng, trước
+khi có script hoặc lời giải:
+
+```powershell
+npm run progress -- output/<session>
+```
+
+Mở liên kết được in ra; liên kết cũng lưu trong `progress.url`. Server loopback
+chạy tới khi người tạo dừng bằng Ctrl+C, không tự tắt khi pipeline xong/lỗi.
+Liên kết có khóa riêng và cookie chỉ đọc; không chia sẻ với học sinh vì trang
+hiển thị toàn bộ `solution.md` và `verification.md`, kể cả guided. Concept
+gallery vẫn không phục vụ các file này. Không có endpoint gọi provider.
+
+Agent cập nhật trạng thái khi nhận đề, chờ lựa chọn, giải và tự kiểm tra:
+
+```powershell
+npm run progress -- output/<session> "Đang giải" "Đang xét điều kiện và kiểm tra các trường hợp."
+```
+
+`--audit`, `--concepts`, pipeline và rerender cập nhật giai đoạn tương ứng nếu
+session đã có progress. SSE phát hiện thay đổi file mỗi nửa giây; trình duyệt
+tự kết nối lại. Agent vẫn phải trình bày lời giải/audit trong chat theo mục
+dưới; progress không thay thế việc hỏi/chờ lựa chọn cách giải hoặc concept.
+
+Khi có `index.html`, trang hiện preview HyperFrames/GSAP với phát/dừng/seek;
+khi có `frames/latest.png`, hiện frame mới nhất; khi có `video.mp4`, hiện player
+MP4 hỗ trợ seek. File xuất hiện muộn sẽ được thêm mà không tải lại trang.
+Đây là preview composition và frame được task xuất ra, chưa phải luồng frame
+trực tiếp hay phần trăm hoàn thành từ HyperFrames renderer. Không dựng tiến
+độ giả hoặc tự gọi TTS/render để tạo preview. Có thể ghi đè frame mới nhất
+trong session khi task đã chụp frame thật.
+
 ## Chọn cách giải
 
 Khi nhận yêu cầu giải toán (kể cả chưa yêu cầu video), trước khi giải hoặc viết
@@ -53,11 +87,41 @@ ghi giả thiết, lời giải, đáp án và cách kiểm tra: thay nghiệm, 
 xác định, đơn vị, xét trường hợp hoặc chứng minh. Với trắc nghiệm ghi cả giá trị và
 phương án. Không chỉ đoán chữ cái.
 
+## Duyệt lời giải và audit
+
+Thứ tự bắt buộc: nhận đề → hỏi/chờ chọn cách giải → giải và tự kiểm tra →
+chuẩn bị bản nháp kịch bản cho verifier → validate/audit → hiển thị phần duyệt
+cho người tạo → chọn concept (nếu tạo video) → TTS/render khi audit đạt.
+Không đi thẳng từ lựa chọn cách giải sang concept hay sản xuất. Yêu cầu chỉ giải
+toán bằng văn bản cũng phải giải, audit và trình bày kết quả trước khi trả bài.
+
+Sau khi audit kết thúc, hiển thị **ngay trong chat**, không chỉ trả link hoặc câu
+"đã pass":
+
+- Lời giải đầy đủ: giả thiết, điều kiện, các bước có lý do, đáp án và phép kiểm tra.
+- Kết quả audit thực tế: trạng thái `pass/fail/uncertain/unverified`, model,
+  thời điểm, chạy mới hay dùng cache khớp; bằng chứng đối chiếu suy luận, điều kiện,
+  đáp án và việc không lộ đáp án guided; nêu lỗi/mâu thuẫn/điểm chưa kiểm chứng.
+
+Đây là **phần duyệt riêng cho người tạo video**, có thể chứa lời giải đầy đủ và
+đáp án kể cả `guided`, theo yêu cầu người tạo. Nó không phải bài giảng trả cho
+học sinh: video, lời đọc, phụ đề, gallery và phần hướng dẫn cho người học vẫn
+giữ đáp án cuối ngoài nội dung. Không phục vụ file nội bộ qua concept server.
+
+`--audit` in lời giải và báo cáo thực tế ở terminal dành cho người tạo, kể cả khi
+audit không đạt. Agent đọc báo cáo đó và trình bày phần duyệt trong chat. Không
+dùng kết quả validate/mock thay cho audit thật. Nếu audit lỗi hoặc chưa đạt,
+báo trạng thái và vấn đề thực tế, dừng TTS/render; không tự ghi nhãn pass.
+Khi sửa nội dung toán, audit lại và hiển thị kết quả cập nhật trước khi tiếp tục.
+Trình bày phần duyệt không tự tạo thêm một bước hỏi xác nhận; vẫn giữ bước
+chọn concept rõ ràng như quy định.
+
 ## Chọn concept video
 
-Với bài mới có yêu cầu video, sau khi chọn cách giải và chuẩn bị kịch bản,
-cho người dùng xem ba concept bằng chính nội dung bài: **Bảng phấn**, **Vở ô ly**,
-**Đồ vật trực quan**. Đọc [quy tắc concept](video-concepts.md). Chạy:
+Với bài mới có yêu cầu video, sau khi đã giải, audit và hiển thị phần duyệt cho người tạo,
+cho người dùng xem concept bằng chính nội dung bài: **News / Đồ họa biên tập**, **Thám tử**,
+**Neon Lab**, cùng **Bảng phấn**, **Vở ô ly**, **Đồ vật trực quan** để tương thích.
+Đọc [quy tắc concept](video-concepts.md). Chạy:
 
 ```powershell
 npm run pipeline -- output/<session>/script.json --concepts
@@ -67,10 +131,31 @@ Mở URL loopback được in ra, xem ba khung Đề bài/Bước giải/Kết t
 **Sử dụng concept này** để lưu `visualConcept` vào kịch bản. Chờ người dùng chọn;
 không xem radio được đánh dấu sẵn là chấp thuận. Khi tiếp tục cùng bài, dùng lại
 concept đã lưu. Chọn xong dừng server bằng Ctrl+C rồi validate/audit/TTS/render.
-Preview là khung tĩnh để duyệt bố cục, không gọi provider và chưa chứng minh lời giải
+Preview chuyển động dùng timing giả lập, có Phát/Tạm dừng/seek, không có audio thật,
+không gọi provider và chưa chứng minh lời giải
 đúng. Chỉ có yêu cầu giải toán bằng văn bản thì không cần bước concept video.
 
 ## Kịch bản version 2.0
+
+### HTML responsive và hai video bắt buộc
+
+Mọi HTML composition phải fit toàn bộ canvas theo viewport, cập nhật khi resize;
+không crop công thức/hình. Preview mobile/desktop không đổi timeline hoặc nội dung
+đã audit. Kích thước xuất cố định theo metadata của mỗi composition.
+
+Pipeline và rerender luôn chuẩn bị hai bản: `index.html` dọc 1080×1920 và
+`landscape/index.html` ngang 1920×1080. Bản ngang bài toán dùng rail tiêu đề bên
+trái và vùng làm bài bên phải, không kéo giãn hình dọc. `formats.json` ghi các
+đường dẫn/kích thước. Dùng chung audio, lời đọc, audit và scene timing; không
+gọi TTS thêm chỉ vì đổi tỷ lệ. News script legacy dùng canvas dọc đặt trong
+khung ngang để tương thích; cần duyệt bố cục riêng khi nâng thiết kế legacy.
+
+Đầu ra render bắt buộc gồm `video-portrait.mp4` và `video-landscape.mp4`.
+`video.mp4` vẫn là bản dọc để tương thích. Chỉ báo hoàn tất sau khi cả hai render
+thành công; nếu một bản lỗi, báo thiếu bản đó và chưa giao đủ đầu ra. `--no-render`
+chỉ xuất cặp composition/audio, không được gọi là đã giao hai video. Kiểm tra
+hai HTML trên browser, seek timeline, check layout và ffprobe cả hai MP4.
+Progress hiển thị preview/video của cả hai tỷ lệ khi file đã có.
 
 Schema: ../src/render/math-schema.ts. Ví dụ chạy được: ../examples/math/algebra.json,
 geometry-english.json, calculus.json.
@@ -78,7 +163,7 @@ geometry-english.json, calculus.json.
 - solutionMode: `answer` hoặc `guided`, đúng lựa chọn người dùng. Kịch bản cũ
   thiếu trường này được pipeline hiểu là `answer`; agent luôn ghi rõ cho bài mới.
 - metadata: title, channel; source tùy chọn, không cần bài báo hoặc ảnh nền.
-- visualConcept: `chalkboard`, `notebook` hoặc `manipulatives`, đúng lựa chọn đã lưu.
+- visualConcept: `news`, `detective`, `neon`, `chalkboard`, `notebook` hoặc `manipulatives`, đúng lựa chọn đã lưu.
   Kịch bản cũ thiếu trường này dùng `classic` để giữ bố cục cũ.
 - problem: original, language (vi/en), topic/level tùy chọn. `answer` (LaTeX)
   bắt buộc với `answer`, phải bỏ hẳn với `guided`.

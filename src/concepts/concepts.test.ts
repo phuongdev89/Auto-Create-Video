@@ -5,12 +5,36 @@ import { randomUUID } from "node:crypto";
 import { MathScriptSchema } from "../render/math-schema.js";
 import { composeMathHtml } from "../render/math-composer.js";
 import { startConceptServer } from "./server.js";
+import { planMathScenes } from "../render/math-direction.js";
 
 const session = join("output", `concept-test-${randomUUID()}`);
 afterAll(() => rm(session, { recursive: true, force: true }));
 const load = async (name = "algebra-guided") => JSON.parse(await readFile(`examples/math/${name}.json`, "utf8"));
 
 describe("video concepts", () => {
+  it.each(["x^ -5 = y^ -5", "(a = b)", "a = b = c", "\\frac{x}{2} = 3"])("preserves unsupported algebra intact: %s", async equation => {
+    const raw = await load(); raw.visualConcept = "neon";
+    raw.scenes[3].templateData.equations = [equation];
+    const script = MathScriptSchema.parse(raw);
+    const html = composeMathHtml({ script, sceneAudio: script.scenes.map(s => ({ id: s.id, durationSec: 5 })), gapSec: .3, audioRelPath: "voice.mp3" });
+    expect(html).not.toContain('class="equation-operation"');
+  });
+  it.each(["news", "detective", "neon"] as const)("directs %s from audio without changing guided math", async concept => {
+    const raw = await load(); raw.visualConcept = concept;
+    const script = MathScriptSchema.parse(raw);
+    const audio = script.scenes.map((s, i) => ({ id: s.id, durationSec: 3 + i }));
+    const plan = planMathScenes(script, audio, .3);
+    expect(new Set(plan.map(s => s.layout)).size).toBe(5);
+    expect(plan[1].start).toBe(3.3);
+    expect(plan.at(-1)!.duration).toBe(13);
+    const html = composeMathHtml({ script, sceneAudio: audio, gapSec: .3, audioRelPath: "voice.mp3" });
+    expect(html.match(/class="equation-operation"/g)).toHaveLength(2);
+    expect(html).not.toMatch(/x = 6|PRIVATE ANSWER/);
+    expect(html).not.toContain('id="math-answer"');
+    const preview = composeMathHtml({ script, sceneAudio: audio, gapSec: .3, audioRelPath: "", previewSceneId: "subtract", previewMotion: true });
+    expect(preview).toContain('data-preview-motion="true"');
+    expect(preview).not.toContain("<audio");
+  });
   it("preserves the classic layout for old scripts and rejects unknown concepts", async () => {
     const raw = await load();
     expect(MathScriptSchema.parse(raw).visualConcept).toBe("classic");
@@ -59,6 +83,15 @@ describe("video concepts", () => {
       expect((await post("notebook")).status).toBe(200);
       expect(JSON.parse(await readFile(path, "utf8"))).toEqual({ ...raw, visualConcept: "notebook" });
       expect((await (await fetch(url)).text())).toContain('value="notebook" checked');
+      expect((await post("chalkboard")).status).toBe(200);
+      for (const concept of ["news", "detective", "neon"]) {
+        const moving = await (await fetch(url + concept + "-1.html")).text();
+        expect(moving).toContain('data-preview-motion="true"');
+        expect(moving).not.toContain("PRIVATE ANSWER");
+        expect(moving).not.toMatch(/x = 6/);
+        expect((await post(concept)).status).toBe(200);
+        expect(JSON.parse(await readFile(path, "utf8"))).toEqual({ ...raw, visualConcept: concept });
+      }
       expect((await post("chalkboard")).status).toBe(200);
       const external = { ...raw, visualConcept: "chalkboard", customNotes: "Edited while gallery was open" };
       await writeFile(path, JSON.stringify(external));

@@ -6,6 +6,9 @@ Lời giải, giọng nam và `solutionMode` độc lập với concept; đổi 
 
 | Lựa chọn | `visualConcept` | Cách thể hiện |
 |---|---|---|
+| News / Đồ họa biên tập | `news` | Tiêu đề lớn → brief dữ kiện → thẻ lập luận đánh số → đối chiếu → điểm nhớ. Hai phần phép tính có sẵn đi vào từ hai lề đồng thời. |
+| Thám tử | `detective` | Bìa hồ sơ → tài liệu đề → chuỗi manh mối có đường nối → sổ đối chiếu → tổng hợp. Phép tính có sẵn được ghim đồng thời vào hai vế. |
+| Neon Lab | `neon` | Tiêu đề lab → ô dữ kiện → đường biến đổi → khung kiểm tra → ô tổng kết. Hai phần phép tính hiện đồng thời; nét sơ đồ SVG vẽ theo thứ tự khai báo. |
 | Bảng phấn | `chalkboard` | Bảng tối có viền, nét công thức/sơ đồ sáng; các dòng xuất hiện từ trái. |
 | Vở ô ly | `notebook` | Giấy ô ly có lề đỏ, công thức gạch dưới; các dòng xuất hiện theo hướng từ dưới lên. |
 | Đồ vật trực quan | `manipulatives` | Nhóm vật đếm, sơ đồ, thẻ phép tính bo góc; nội dung xuất hiện với thay đổi kích thước nhẹ. |
@@ -19,12 +22,12 @@ npm run pipeline -- output/<session>/script.json --concepts
 ```
 
 Mở URL được in ra. Trang hiển thị cùng nội dung đề bài, bước giải đầu tiên và
-kết thúc theo cả ba concept. Chọn radio rồi bấm **Sử dụng concept này**.
+kết thúc theo các concept mới và ba concept cũ. Chọn radio rồi bấm **Sử dụng concept này**.
 CLI giữ server hoạt động đến khi nhấn Ctrl+C. Sau đó chạy validate, audit và
 pipeline theo workflow hiện tại. `rerender` cũng dùng concept đã lưu.
 
 Preview dùng renderer thật với khung 1080×1920 và font/KaTeX cục bộ, nhưng
-là ảnh bố cục tĩnh, không có audio hoặc thời lượng TTS. Nó không thay thế việc
+chạy lặp trên timeline GSAP với timing giả lập, không có audio thật hoặc thời lượng TTS. Có Phát, Tạm dừng và thanh seek. Nó không thay thế việc
 kiểm tra chuyển động và MP4 cuối. Tệp preview ở `output/<session>/concepts/`.
 Server chỉ phục vụ các preview và tài nguyên font/CSS/JS; không phục vụ
 `solution.md`, `verification.*` hoặc kịch bản nội bộ. Nếu kịch bản bị sửa
@@ -59,3 +62,18 @@ Chế độ `guided` phải kiểm tra nhãn, số vật và sơ đồ không ti
 Chỉ đổi `visualConcept` không đổi fingerprint lời đọc hoặc nội dung kiểm chứng,
 nên audio/audit đã đạt và còn khớp được tái sử dụng. Sửa dữ kiện, lời đọc hoặc
 nhóm vật vẫn tuân theo quy tắc cache và audit hiện tại.
+
+## Kế hoạch cảnh và giới hạn animation
+
+Pipeline và rerender ghi `scene-plan.json` trong session: chủ thể, layout, trạng thái đầu,
+biến đổi, điểm nhấn, entrance/reveal/hold và cut. Các mốc tuyệt đối dùng duration audio
+đã đo; kế hoạch trong QA có nhãn `simulated-no-TTS`. Trong cảnh chưa có cue từ audio,
+các phần được phân bố theo thứ tự nội dung trong nửa đầu slot, giữ phần còn lại để đọc.
+Đây chưa phải căn từng từ theo timestamp lời đọc.
+
+Animation hai vế chỉ tách một dấu bằng đơn giản ở cấp cao nhất, không có cấu trúc
+LaTeX phức tạp. Nếu hai vế có cùng phần cộng/trừ số nguyên cuối đã khai báo, renderer
+cho chính hai phần đó xuất hiện đồng thời. Không tạo phép biến đổi mới, không rút gọn,
+không suy ra nghiệm. Các biểu thức còn lại giữ nguyên KaTeX và reveal tuần tự.
+Sơ đồ lab vẽ nét đã khai báo, không tự thêm giả thiết hoặc dựng bằng chứng toán.
+Chưa có diễn nhân vật, AI video, asset trả phí hay provider mới.

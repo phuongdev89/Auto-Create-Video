@@ -6,6 +6,7 @@ import { MathScriptSchema, type MathScript } from "../render/math-schema.js";
 import { MathConceptId, mathConcepts } from "../render/math-concepts.js";
 import { composeMathHtml, copyMathAssets } from "../render/math-composer.js";
 import { conceptGallery } from "./gallery.js";
+import { updateProgress } from "../progress/state.js";
 
 export async function writeConceptPreviews(script: MathScript, outputDir: string): Promise<void> {
   await mkdir(outputDir, { recursive: true });
@@ -16,7 +17,7 @@ export async function writeConceptPreviews(script: MathScript, outputDir: string
     for (const [index, scene] of frames.entries()) {
       const html = composeMathHtml({ script: { ...script, visualConcept: concept.id },
         sceneAudio: script.scenes.map(s => ({ id: s.id, durationSec: 5 })),
-        gapSec: .3, audioRelPath: "", previewSceneId: scene.id });
+        gapSec: .3, audioRelPath: "", previewSceneId: scene.id, previewMotion: true });
       await writeFile(join(outputDir, `${concept.id}-${index}.html`), html);
     }
   }
@@ -53,7 +54,7 @@ export async function startConceptServer(scriptPath: string) {
           let concept: MathConceptId;
           try { concept = MathConceptId.parse(JSON.parse(body).concept); }
           catch { json(400, { error: "Concept không hợp lệ." }); return; }
-          if (!mathConcepts.some(item => item.id === concept)) { json(400, { error: "Hãy chọn một trong ba concept." }); return; }
+          if (!mathConcepts.some(item => item.id === concept)) { json(400, { error: "Hãy chọn một concept trong gallery." }); return; }
           const currentText = await readFile(path, "utf8");
           if (currentText !== savedText) { json(409, { error: "Kịch bản đã thay đổi. Dừng lệnh và mở lại trang để xem nội dung mới." }); return; }
           const raw = JSON.parse(currentText);
@@ -64,6 +65,7 @@ export async function startConceptServer(scriptPath: string) {
           try { await writeFile(temp, nextText); await rename(temp, path); }
           finally { await unlink(temp).catch(() => {}); }
           savedText = nextText;
+          await updateProgress(session, "Concept đã chọn", `Đã lưu ${concept}; chuẩn bị kiểm tra audit trước sản xuất.`);
           json(200, { concept });
         } finally { saving = false; }
         return;
@@ -76,7 +78,7 @@ export async function startConceptServer(scriptPath: string) {
         return;
       }
       const name = decodeURIComponent(new URL(request.url ?? "/", origin).pathname).slice(1);
-      if (!/^(?:(?:chalkboard|notebook|manipulatives)-[0-2]\.html|math-styles\.css|math-assets\/(?:katex\.min\.css|gsap\.min\.js|fonts\/[\w.-]+\.(?:woff2?|ttf)))$/.test(name)) { json(404, { error: "Không tìm thấy." }); return; }
+      if (!/^(?:(?:news|detective|neon|chalkboard|notebook|manipulatives)-[0-2]\.html|math-styles\.css|math-assets\/(?:katex\.min\.css|gsap\.min\.js|fonts\/[\w.-]+\.(?:woff2?|ttf)))$/.test(name)) { json(404, { error: "Không tìm thấy." }); return; }
       const asset = await realpath(join(publicDir, name));
       const assetRel = relative(publicRoot, asset);
       if (assetRel.startsWith("..") || isAbsolute(assetRel)) { json(404, { error: "Không tìm thấy." }); return; }

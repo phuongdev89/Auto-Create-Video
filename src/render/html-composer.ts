@@ -3,6 +3,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Script, LegacyScript, TemplateDataType } from "./script-schema.js";
 import { composeMathHtml } from "./math-composer.js";
+import { responsiveComposition, type VideoOrientation } from "./responsive.js";
 import type { TiktokConfig } from "../config.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,7 @@ export interface SceneAudio {
 }
 
 export interface ComposeArgs {
+  orientation?: VideoOrientation;
   script: Script;
   sceneAudio: SceneAudio[];
   gapSec: number;
@@ -69,13 +71,13 @@ export function composeHtml(args: ComposeArgs): string {
   const animJs = readFileSync(join(TPL_DIR, "animations.js"), "utf8");
 
   const tpl = readFileSync(join(TPL_DIR, "base.html.tmpl"), "utf8");
-  return tpl
+  return responsiveComposition(tpl
     .replace("{{TITLE}}", escapeHtml(script.metadata.title))
     .replace(/\{\{TOTAL_DURATION\}\}/g, totalDuration.toFixed(2))
     .replace("{{SHELL}}", shellHtml)
     .replace("{{SCENES}}", sceneHtml)
     .replace(/src="voice\.mp3"/g, `src="${audioRelPath}"`)
-    .replace('<script src="animations.js"></script>', `<script>\n${animJs}\n</script>`);
+    .replace('<script src="animations.js"></script>', `<script>\n${animJs}\n</script>`), args.orientation);
 }
 
 // ── PERSISTENT SHELL ───────────────────────────────────────────────────────

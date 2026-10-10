@@ -1,7 +1,7 @@
 # ISSUE-001 — Nâng concept thành cách kể chuyện và thiết kế từng cảnh
 
 - Ngày ghi nhận: 2026-10-10.
-- Trạng thái: Đã thống nhất hướng đề xuất; chưa triển khai đợt nâng cấp này.
+- Trạng thái: Đã triển khai đợt đầu và kiểm chứng kỹ thuật; còn duyệt thẩm mỹ và các giới hạn timing/animation. Xem [bằng chứng](ISSUE-001-evidence.md).
 - Dự án: `D:\AI\Auto-Create-Video`.
 - Nhánh hiện tại: `codex/video-concepts`.
 - Ưu tiên: Chất lượng hình ảnh và animation giải thích bài toán.
@@ -99,16 +99,20 @@ Giữ chỉnh sửa không liên quan; không refactor vô tội vạ.
 
 ## Tiêu chí nghiệm thu
 
-- [ ] Khảo sát và ghi lại phần đáng giữ của pipeline news cũ bằng đường dẫn/commit cụ thể.
-- [ ] News, Thám tử, Neon khác nhau rõ về cấu trúc cảnh và cách thể hiện, không chỉ màu.
-- [ ] Có kế hoạch cảnh và timing; ít nhất một animation thể hiện ý nghĩa toán học được kiểm tra.
-- [ ] Gallery có preview chuyển động, lưu đúng lựa chọn, giữ chỉnh sửa tay và phát hiện script đã đổi.
-- [ ] Script cũ và rerender tiếp tục hoạt động; bài guided không lộ đáp án.
-- [ ] Kiểm tra browser thực tế, seek timeline và khung hình representative của mỗi concept.
-- [ ] Typecheck/test phù hợp đạt; HyperFrames check được đọc đầy đủ, không đánh đồng exit code với không có cảnh báo.
-- [ ] Render mẫu thực tế và kiểm tra chữ/công thức, timing, metadata và audio nếu có.
-- [ ] Báo riêng bằng chứng mock/API, browser, TTS thật và MP4; NO EVIDENCE = NO PASS.
-- [ ] Không tự gọi provider mới hoặc tiêu credit tạo video để nghiệm thu.
+- [x] Khảo sát và ghi lại phần đáng giữ của pipeline news cũ bằng đường dẫn/commit cụ thể.
+- [x] News, Thám tử, Neon có năm layout theo vai trò và treatment khác nhau; chưa kết luận đã đạt thẩm mỹ xuất sắc.
+- [x] Có kế hoạch cảnh/timing theo audio; animation trừ cùng số ở hai vế được kiểm tra seek. Chưa căn từng từ.
+- [x] Gallery có preview chuyển động, lưu đúng lựa chọn, giữ chỉnh sửa tay và phát hiện script đã đổi.
+- [x] Script cũ/rerender thực tế hoạt động trên bản sao; fixture guided đã audit không lộ đáp án trong preview/MP4.
+- [x] Kiểm tra browser desktop/mobile, seek ngược và khung hình representative của mỗi concept.
+- [x] Typecheck và 157 test đạt; đọc đầy đủ HyperFrames check, ghi rõ 9/14 cảnh báo và motion assertions chưa bật.
+- [x] Render ba MP4 mẫu, kiểm tra frame mã hóa/metadata/timing; rerender dùng audio cache thật và kiểm tra tín hiệu. Chưa nghe duyệt toàn bộ lời đọc.
+- [x] Báo riêng bằng chứng mock/API, browser, audit/audio cache thật, không có TTS mới và MP4; xem evidence.
+- [x] Không gọi provider mới hoặc tiêu credit tạo video để nghiệm thu.
+
+Các checkbox trên phản ánh bằng chứng kỹ thuật ở phạm vi fixture đã chạy. Các phần
+chưa nghiệm thu (thẩm mỹ, word alignment, animation đại số phức tạp, TTS mới) được
+ghi riêng trong [ISSUE-001-evidence.md](ISSUE-001-evidence.md); không coi issue hoàn tất tuyệt đối.
 
 ## Tham khảo OpenMontage và giới hạn bằng chứng
 

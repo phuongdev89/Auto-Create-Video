@@ -54,3 +54,65 @@ body[data-concept="manipulatives"] { background: #fff4e8; }
 [data-concept="manipulatives"] .math-note { background: #e8f4ee; border-radius: 24px; }
 [data-concept="manipulatives"] .math-object-group { background: #fff; border-color: #c5d5e4; border-radius: 24px; }
 [data-concept="manipulatives"] .math-object { border-radius: 10px; box-shadow: inset 0 -5px 0 #0002; }
+
+/* Editorial: headline cover, data brief, numbered analysis, comparison. */
+.direction-label { font-size: 24px; font-weight: 700; letter-spacing: 4px; margin-bottom: 22px; }
+.direction-rule { height: 5px; background: currentColor; transform-origin: left; margin-bottom: 28px; }
+.equation-pair { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); gap: 12px; align-items: center; }
+.equation-side { padding: 12px 4px; border-radius: 8px; }
+.equation-side:has(.equation-operation) { display: flex; justify-content: center; align-items: center; gap: 8px; }
+.equation-operation { display: block; border-bottom: 3px solid currentColor; }
+body[data-concept="news"] { background: #f5f0e7; color: #172938; }
+[data-concept="news"] .math-board { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 40px 32px; }
+[data-concept="news"] h1 { font-size: 64px; line-height: 1.12; letter-spacing: -2px; }
+[data-concept="news"] .direction-label { color: #a73722; }
+[data-layout="news-headline"] h1 { font-size: 84px; margin-top: 100px; }
+[data-layout="news-headline"] .math-intro-mark { text-align: left; font-size: 240px; margin-top: 40px; }
+[data-layout="news-brief"] .math-problem-text { border-top: 2px solid #172938; border-bottom: 2px solid #172938; padding: 38px 0; }
+[data-layout="news-analysis"] .math-content { counter-reset: step; }
+[data-layout="news-analysis"] .math-equation { position: relative; background: #fffdf8; border-left: 0; border-radius: 0; padding-top: 48px; }
+[data-layout="news-analysis"] .math-equation::before { counter-increment: step; content: "0" counter(step); position: absolute; top: 8px; left: 14px; font-size: 22px; color: #a73722; }
+[data-layout="news-compare"] .math-content { border-left: 12px solid #a73722; padding-left: 30px; }
+[data-layout="news-takeaway"] .math-equation { border: 0; background: #172938; color: white; padding: 40px 16px; }
+
+/* Detective: document cover, dossier, linked evidence and review ledger. */
+body[data-concept="detective"] { background: #263630; color: #302c23; }
+[data-concept="detective"] .math-brand, [data-concept="detective"] .math-footer, [data-concept="detective"] .math-brand small { color: #f4e7c9; }
+[data-concept="detective"] .math-board { background: #f4e7c9; border: 0; border-radius: 3px; padding: 42px; box-shadow: 16px 16px 0 #16251e; }
+[data-concept="detective"] .direction-label { color: #7d3724; }
+[data-concept="detective"] .math-phase { color: #5b5140; }
+[data-layout="case-cover"] h1 { margin-top: 90px; font-size: 74px; border-bottom: 4px solid #302c23; padding-bottom: 36px; }
+[data-layout="case-file"] .math-problem-text { background: #fffaf0; border-left: 10px solid #7d3724; padding: 32px; }
+[data-layout="evidence-chain"] .math-content { padding-left: 30px; border-left: 4px solid #7d3724; }
+[data-layout="evidence-chain"] .math-equation { position: relative; background: #fffaf0; border: 1px solid #b3a080; border-radius: 0; }
+[data-layout="evidence-chain"] .math-equation::before { content: ""; position: absolute; left: -44px; top: 36px; width: 22px; height: 22px; border-radius: 50%; background: #7d3724; }
+[data-layout="evidence-review"] .math-content { border-top: 4px double #7d3724; border-bottom: 4px double #7d3724; padding: 32px 0; }
+[data-layout="case-summary"] .math-note { border: 3px solid #7d3724; background: #fffaf0; color: #302c23; }
+
+/* Lab: inputs, a connected process rail, test chamber and output panel. */
+body[data-concept="neon"] { background: #0c1826; color: #eef6ff; }
+[data-concept="neon"] .math-brand small, [data-concept="neon"] .math-footer, [data-concept="neon"] .math-phase { color: #a8c8df; }
+[data-concept="neon"] .math-board { background: transparent; border: 0; box-shadow: none; border-radius: 0; padding: 40px 32px; }
+[data-concept="neon"] .direction-label { color: #83e4df; }
+[data-concept="neon"] .math-equation { background: #152a3e; color: #eef6ff; border: 1px solid #4a7f9e; border-left: 6px solid #83e4df; }
+[data-concept="neon"] .math-note { background: #183536; color: #ccf5e7; }
+[data-concept="neon"] .math-intro-mark { color: #83e4df; }
+[data-layout="lab-title"] h1 { margin-top: 120px; font-size: 78px; }
+[data-layout="lab-input"] .math-problem-text { padding: 32px; border: 1px solid #4a7f9e; background: #152a3e; }
+[data-layout="lab-process"] .math-content { border-left: 3px solid #83e4df; padding-left: 30px; }
+[data-layout="lab-process"] .math-equation { border-radius: 0 24px 24px 0; }
+[data-layout="lab-test"] .math-content { padding: 32px; border: 2px solid #83e4df; }
+[data-layout="lab-output"] .math-equation { border: 2px solid #83e4df; padding: 40px 14px; }
+
+/* Landscape is a reading layout: heading rail at left, working area at right. */
+body[data-orientation="landscape"] .math-brand { top: 40px; left: 64px; }
+body[data-orientation="landscape"] .math-board { left: 64px; top: 180px; width: 1792px; height: 780px; padding: 40px; display: grid; grid-template-columns: 480px minmax(0,1fr); grid-template-rows: auto auto 1fr; column-gap: 56px; align-content: start; }
+body[data-orientation="landscape"] .direction-label { grid-column: 1; margin-bottom: 18px; }
+body[data-orientation="landscape"] .direction-rule { grid-column: 1; margin-bottom: 20px; }
+body[data-orientation="landscape"] .math-phase { grid-column: 1; margin-bottom: 20px; }
+body[data-orientation="landscape"] .math-board h1 { grid-column: 1; font-size: 54px; margin: 0; align-self: start; }
+body[data-orientation="landscape"] .math-content { grid-column: 2; grid-row: 1 / span 5; font-size: 38px; min-width: 0; }
+body[data-orientation="landscape"] .math-footer { bottom: 40px; font-size: 24px; }
+body[data-orientation="landscape"] .math-intro-mark { margin-top: 35px; font-size: 190px; }
+body[data-orientation="landscape"] .math-diagram { max-height: 460px; }
+body[data-orientation="landscape"] .math-equation { padding: 20px 14px; margin-bottom: 20px; }
